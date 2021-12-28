@@ -1,11 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 import path from 'path'
+import dotenv from "dotenv"
 import { env } from 'process';
 import { WgConfig, getConfigObjectFromFile, createPeerPairs, checkWgIsInstalled } from 'wireguard-tools'
 
 const supabase = createClient("https://xsmomhokxpwacbhotdmk.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MDU4MTE3MiwiZXhwIjoxOTU2MTU3MTcyfQ.nGtdGflJcGTdegPJwg3FkSQJvKz_VGNzmmml2hj6rQg") 
 const filePath = path.join(__dirname, '/configs', '/reseda.conf');
 
+dotenv.config();
 var connections = 0;
 
 type Packet = {
@@ -34,14 +36,14 @@ const server = async () => {
     const keypair = await svr_config.generateKeys({ preSharedKey: true });
 	await svr_config.writeToFile();
 
-	svr_config.up();
+	await svr_config.up();
 
 	console.log("SERVER UP!");
 	console.log(supabase ? "SUPABASE IS UP" : "NO SUPABASE!");
 
 	supabase
 		.from('open_connections')
-		.on("*", (payload) => {
+		.on('*', (payload) => {
 			const data: Packet = payload.new;
 			console.log("New Packet!")
 

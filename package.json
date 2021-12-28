@@ -29,6 +29,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^1.29.1",
     "@types/node": "^17.0.4",
+    "dotenv": "^10.0.0",
     "lodash.mergewith": "^4.6.2",
     "wireguard-tools": "^0.1.0"
   },
