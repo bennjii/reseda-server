@@ -36,32 +36,45 @@ const server = async () => {
 
 	svr_config.up();
 
-	supabase.from('open_connections').on("*", (payload) => {
-		const data: Packet = payload.new;
-		console.log(`NEW PACKET FOR ${data.server}`)
+	console.log("SERVER UP!");
+	console.log(supabase ? "SUPABASE IS UP" : "NO SUPABASE!");
 
-		if(data.server == process.env.SERVER && data.awaiting && (payload.eventType == "INSERT" || payload.eventType == "UPDATE")) {
-			connections++;
+	supabase
+		.from('open_connections')
+		.on("*", (payload) => {
+			const data: Packet = payload.new;
+			console.log("New Packet!")
 
-			console.log(data);
-			svr_config.addPeer({
-				publicKey: data.client_pub_key,
-				allowedIps: [`192.168.69.${connections ?? '2'}`],
-				persistentKeepalive: 25
-			});
+			if(
+				data.server == process.env.SERVER 
+				&& data.awaiting 
+				&& (payload.eventType == "INSERT" 
+				|| payload.eventType == "UPDATE")
+			) {
+				connections++;
 
-			supabase.from("open_connections").update({
-				client_number: connections,
-				awaiting: false,
-				svr_pub_key: svr_config.publicKey
-			}).match({ id: data.id }).then(e => {
-				svr_config.save();
-			});
-		}else if(data.server == process.env.SERVER && payload.eventType == "DELETE") {
-			// Remove Connection
-		}
-	
-	}).subscribe();
+				console.log(data);
+				svr_config.addPeer({
+					publicKey: data.client_pub_key,
+					allowedIps: [`192.168.69.${connections ?? '2'}`],
+					persistentKeepalive: 25
+				});
+
+				supabase.from("open_connections").update({
+					client_number: connections,
+					awaiting: false,
+					svr_pub_key: svr_config.publicKey
+				}).match({ id: data.id }).then(e => {
+					svr_config.save();
+				});
+			}else if(
+				data.server == process.env.SERVER 
+				&& payload.eventType == "DELETE"
+			) {
+				// Remove Connection
+			}
+		
+		}).subscribe();
 
 }
 
