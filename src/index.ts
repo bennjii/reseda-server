@@ -5,7 +5,7 @@ import { WgConfig } from 'wireguard-tools'
 import path from 'path'
 
 const supabase = createClient("https://xsmomhokxpwacbhotdmk.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MDU4MTE3MiwiZXhwIjoxOTU2MTU3MTcyfQ.nGtdGflJcGTdegPJwg3FkSQJvKz_VGNzmmml2hj6rQg") 
-const filePath = path.join(__dirname, '/configs', '/reseda.conf');
+const filePath = path.join(__dirname, '/configs', '/etc/wireguard/reseda.conf');
 
 var connections = 0;
 
