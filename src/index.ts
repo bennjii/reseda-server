@@ -45,11 +45,14 @@ const server = async () => {
 			const data: Packet = payload.new;
 			console.log("New Packet!", data)
 
+			console.log(data.server == process.env.SERVER);
+			console.log(data.awaiting);
+			console.log(payload.eventType);
+
 			if(
 				data.server == process.env.SERVER 
 				&& data.awaiting 
-				&& (payload.eventType == "INSERT" 
-				|| payload.eventType == "UPDATE")
+				&& (payload.eventType == "INSERT" || payload.eventType == "UPDATE")
 			) {
 				connections++;
 

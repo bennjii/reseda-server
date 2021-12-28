@@ -9,7 +9,7 @@
     "watch": "tsc --watch",
     "dev:test": "ts-node ./src/index.ts",
     "down": "wg-quick down ./reseda.conf",
-    "serve": "yarn --cwd ~/build/configs/ down && tsc -d && node ./build/index.js",
+    "serve": "tsc -d && node ./build/index.js",
     "test": "tsc -d",
     "build:docs": "typedoc --out docs ./src/index.ts"
   },
