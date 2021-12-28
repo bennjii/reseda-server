@@ -39,14 +39,11 @@ const server = async () => {
 
 	await svr_config.up();
 
-	console.log("SERVER UP!");
-	console.log(supabase ? "SUPABASE IS UP" : "NO SUPABASE!");
-
 	supabase
 		.from('open_connections')
 		.on('*', (payload) => {
 			const data: Packet = payload.new;
-			console.log("New Packet!")
+			console.log("New Packet!", data)
 
 			if(
 				data.server == process.env.SERVER 
