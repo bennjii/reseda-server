@@ -4,7 +4,7 @@ import { env } from 'process';
 import { WgConfig, getConfigObjectFromFile, createPeerPairs, checkWgIsInstalled } from 'wireguard-tools'
 
 const supabase = createClient("https://xsmomhokxpwacbhotdmk.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MDU4MTE3MiwiZXhwIjoxOTU2MTU3MTcyfQ.nGtdGflJcGTdegPJwg3FkSQJvKz_VGNzmmml2hj6rQg") 
-const filePath = path.join(__dirname, '/configs', '/guardline-server.conf');
+const filePath = path.join(__dirname, '/configs', '/reseda.conf');
 
 var connections = 0;
 
@@ -18,7 +18,6 @@ type Packet = {
 	awaiting: boolean,
 	server_endpoint: string
 }
-
 
 const server = async () => {
 	const svr_config = new WgConfig({
