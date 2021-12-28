@@ -23,7 +23,7 @@ type Packet = {
 const server = async () => {
 	const svr_config = new WgConfig({
 		wgInterface: {
-			address: ['10.10.1.1'],
+			address: ['192.126.69.1/24'],
 			name: process.env.SERVER ?? "default-1",
 			postUp: ['iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE'],
 			postDown: ['iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE'],
@@ -43,11 +43,7 @@ const server = async () => {
 		.from('open_connections')
 		.on('*', (payload) => {
 			const data: Packet = payload.new;
-			console.log("New Packet!", data)
-
-			console.log(data.server == process.env.SERVER);
-			console.log(data.awaiting);
-			console.log(payload.eventType);
+			console.log("New Packet!", data);
 
 			if(
 				data.server == process.env.SERVER 
@@ -59,7 +55,7 @@ const server = async () => {
 				console.log(data);
 				svr_config.addPeer({
 					publicKey: data.client_pub_key,
-					allowedIps: [`192.168.69.${connections ?? '2'}`],
+					allowedIps: [`192.168.69.${connections+1 ?? '2'}`],
 					persistentKeepalive: 25
 				});
 
@@ -67,8 +63,8 @@ const server = async () => {
 					client_number: connections,
 					awaiting: false,
 					svr_pub_key: svr_config.publicKey
-				}).match({ id: data.id }).then(e => {
-					svr_config.save();
+				}).match({ id: data.id }).then(async e => {
+					await svr_config.save();
 				});
 			}else if(
 				data.server == process.env.SERVER 
