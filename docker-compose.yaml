@@ -1,0 +1,30 @@
+version: "2.1"
+services:
+  wireguard:
+    image: ghcr.io/linuxserver/wireguard
+    container_name: wireguard
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Singapore
+      - SERVERPORT=51820 #optional
+      - PEERDNS=94.140.14.14 # Uses AdGuard DNS Server
+      - PEERS=1,2,3,4,5
+    volumes:
+      - /path/to/appdata/config:/config
+      - /lib/modules:/lib/modules
+    ports:
+      - 51820:51820/tcp
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    restart: unless-stopped
+  
+  server:
+    image: node:latest
+    command: sh -c "yarn build && yarn serve"
+    working_dir: /app
+    volumes:
+      - ./:/app

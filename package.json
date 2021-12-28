@@ -1,0 +1,44 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -d",
+    "dev": "nodemon",
+    "watch": "tsc --watch",
+    "dev:test": "ts-node ./src/index.ts",
+    "serve": "node ./build/index.js",
+    "test": "tsc -d",
+    "build:docs": "typedoc --out docs ./src/index.ts"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      ".git",
+      "node_modules"
+    ],
+    "watch": [
+      "src",
+      "test"
+    ],
+    "exec": "yarn dev:test",
+    "ext": "ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^1.29.1",
+    "@types/node": "^17.0.4",
+    "lodash.mergewith": "^4.6.2",
+    "wireguard-tools": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/lodash.merge": "^4.6.6",
+    "@types/lodash.mergewith": "^4.6.6",
+    "esm": "^3.2.25",
+    "nodemon": "^2.0.7",
+    "ts-node": "^9.1.1",
+    "typedoc": "^0.20.32",
+    "typescript": "^4.1.3"
+  }
+}
