@@ -38,6 +38,7 @@ const server = async () => {
 
 	supabase.from('open_connections').on("*", (payload) => {
 		const data: Packet = payload.new;
+		console.log(`NEW PACKET FOR ${data.server}`)
 
 		if(data.server == process.env.SERVER && data.awaiting && (payload.eventType == "INSERT" || payload.eventType == "UPDATE")) {
 			connections++;
