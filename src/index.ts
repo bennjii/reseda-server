@@ -5,8 +5,6 @@ import { WgConfig } from 'wireguard-tools'
 import path from 'path'
 import ip from "ip"
 
-const { networkInterfaces } = require('os');
-
 if(!process.env.KEY) void(0);
 
 const supabase = createClient("https://xsmomhokxpwacbhotdmk.supabase.co", process.env.KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MDU4MTE3MiwiZXhwIjoxOTU2MTU3MTcyfQ.nGtdGflJcGTdegPJwg3FkSQJvKz_VGNzmmml2hj6rQg") 
@@ -37,7 +35,6 @@ const server = async () => {
 		filePath
 	});
 
-	const nets = networkInterfaces();
 	console.log(`Registering ${process.env.SERVER} (@ ${ip.address()}`);
 
 	// Register Server
@@ -51,7 +48,7 @@ const server = async () => {
 			hostname: ip.address()
 		});
 
-    const keypair = await svr_config.generateKeys(); //{ preSharedKey: true }
+    await svr_config.generateKeys(); //{ preSharedKey: true }
 	await svr_config.writeToFile();
 
 	await svr_config.up();
@@ -60,7 +57,7 @@ const server = async () => {
 		.from('open_connections')
 		.on('*', (payload) => {
 			const data: Packet = payload.new;
-			console.log("New Packet!", data);
+			console.log(`Connecting [${data.author}] \t no. (${data.client_number})`);
 
 			if(
 				data.server == process.env.SERVER 
@@ -69,7 +66,6 @@ const server = async () => {
 			) {
 				connections++;
 
-				console.log(data);
 				svr_config.addPeer({
 					publicKey: data.client_pub_key,
 					allowedIps: [`192.168.69.${connections+1 ?? '2'}`],
@@ -88,7 +84,7 @@ const server = async () => {
 				data.server == process.env.SERVER 
 				&& payload.eventType == "DELETE"
 			) {
-				// Remove Connection
+				if(data.client_pub_key) svr_config.removePeer(data.client_pub_key);
 			}
 		
 		}).subscribe();
