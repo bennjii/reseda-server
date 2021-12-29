@@ -1,7 +1,7 @@
 require('dotenv').config()
 
 import { createClient } from '@supabase/supabase-js'
-import { WgConfig } from 'wireguard-tools'
+import { WgConfig, writeConfig } from 'wireguard-tools'
 import path from 'path'
 import ip from "ip"
 
@@ -33,6 +33,11 @@ const server = async () => {
 			listenPort: 51820,
 		},
 		filePath
+	});
+
+	writeConfig({ 
+		filePath, 
+		config: svr_config
 	});
 
 	await svr_config.down();
@@ -98,6 +103,8 @@ const server = async () => {
 				&& payload.eventType == "DELETE"
 			) {
 				if(data.client_pub_key) svr_config.removePeer(data.client_pub_key);
+			}else {
+				console.log(data, payload.old);
 			}
 		
 		}).subscribe();
