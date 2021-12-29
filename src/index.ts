@@ -103,8 +103,9 @@ const server = async () => {
 				&& payload.eventType == "DELETE"
 			) {
 				if(data.client_pub_key) svr_config.removePeer(data.client_pub_key);
+				console.log("REMOVING::", data, payload);
 			}else {
-				console.log(data, payload.old);
+				console.log(data, payload.old, payload);
 			}
 		
 		}).subscribe();
