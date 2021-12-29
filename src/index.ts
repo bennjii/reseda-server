@@ -3,6 +3,9 @@ require('dotenv').config()
 import { createClient } from '@supabase/supabase-js'
 import { WgConfig } from 'wireguard-tools'
 import path from 'path'
+import ip from "ip"
+
+const { networkInterfaces } = require('os');
 
 if(!process.env.KEY) void(0);
 
@@ -34,7 +37,8 @@ const server = async () => {
 		filePath
 	});
 
-	console.log(`BOOTING ${process.env.SERVER}`);
+	const nets = networkInterfaces();
+	console.log(`Registering ${process.env.SERVER} (@ ${ip.address()}`);
 
 	// Register Server
 	await supabase
@@ -43,7 +47,8 @@ const server = async () => {
 			id: process.env.SERVER,
 			location: process.env.TZ,
 			country: process.env.COUNTRY,
-			virtual: process.env.VIRTUAL
+			virtual: process.env.VIRTUAL,
+			hostname: ip.address()
 		});
 
     const keypair = await svr_config.generateKeys(); //{ preSharedKey: true }
@@ -74,7 +79,8 @@ const server = async () => {
 				supabase.from("open_connections").update({
 					client_number: connections,
 					awaiting: false,
-					svr_pub_key: svr_config.publicKey
+					svr_pub_key: svr_config.publicKey,
+					server_endpoint: ip.address()
 				}).match({ id: data.id }).then(async e => {
 					await svr_config.save();
 				});
