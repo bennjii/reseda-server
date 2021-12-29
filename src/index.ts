@@ -4,7 +4,9 @@ import { createClient } from '@supabase/supabase-js'
 import { WgConfig } from 'wireguard-tools'
 import path from 'path'
 
-const supabase = createClient("https://xsmomhokxpwacbhotdmk.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MDU4MTE3MiwiZXhwIjoxOTU2MTU3MTcyfQ.nGtdGflJcGTdegPJwg3FkSQJvKz_VGNzmmml2hj6rQg") 
+if(!process.env.KEY) void(0);
+
+const supabase = createClient("https://xsmomhokxpwacbhotdmk.supabase.co", process.env.KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MDU4MTE3MiwiZXhwIjoxOTU2MTU3MTcyfQ.nGtdGflJcGTdegPJwg3FkSQJvKz_VGNzmmml2hj6rQg") 
 const filePath = path.join(__dirname, '/configs', './reseda.conf');
 
 var connections = 0;
@@ -33,6 +35,16 @@ const server = async () => {
 	});
 
 	console.log(`BOOTING ${process.env.SERVER}`);
+
+	// Register Server
+	await supabase
+		.from('server_registry')
+		.insert({
+			id: process.env.SERVER,
+			location: process.env.TZ,
+			country: process.env.COUNTRY,
+			virtual: process.env.VIRTUAL
+		});
 
     const keypair = await svr_config.generateKeys(); //{ preSharedKey: true }
 	await svr_config.writeToFile();
