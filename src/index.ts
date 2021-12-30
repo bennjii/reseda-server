@@ -126,6 +126,8 @@ const server = async () => {
 					persistentKeepalive: 25
 				});
 
+			console.log(svr_config.toJson());
+
 			console.log(`[ALLOC]\t> Allocating INDEX::${user_position}`);
 			connections
 				.fill(user_position, {
@@ -138,6 +140,8 @@ const server = async () => {
 					awaiting: false,
 					server_endpoint: ip.address()
 				});
+
+			console.log(connections.at(user_position));
 
 			console.log("[CONN]\t> Publishing to SUPABASE", connections.at(user_position));
 			supabase
