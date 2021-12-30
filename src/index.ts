@@ -41,6 +41,10 @@ class SpaceAllocator {
 	fill(index: number, data: Connection) {
 		this.space.set(index, data);
 	}
+
+	totalUsers() {
+		return this.space.size;
+	}
 }
 
 const connections = new SpaceAllocator();
