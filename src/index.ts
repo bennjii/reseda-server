@@ -75,7 +75,7 @@ const server = async () => {
 	console.log(`
 	 
 	 ██████╗ ███████╗███████╗███████╗██████╗  █████╗ ██╗   ██╗██████╗ ███╗   ██╗
-	 ██╔══██╗██╔════╝██╔════╝██╔════╝██╔══██╗██╔══██╗██║   ██║██╔══██╗████╗  ██║		
+	 ██╔══██╗██╔════╝██╔════╝██╔════╝██╔══██╗██╔══██╗██║   ██║██╔══██╗████╗  ██║
 	 ██████╔╝█████╗  ███████╗█████╗  ██║  ██║███████║██║   ██║██████╔╝██╔██╗ ██║
 	 ██╔══██╗██╔══╝  ╚════██║██╔══╝  ██║  ██║██╔══██║╚██╗ ██╔╝██╔═══╝ ██║╚██╗██║
 	 ██║  ██║███████╗███████║███████╗██████╔╝██║  ██║ ╚████╔╝ ██║     ██║ ╚████║
@@ -116,17 +116,17 @@ const server = async () => {
 		.from('open_connections')
 		.on('INSERT', (payload) => {
 			const data: Partial<Connection> = payload.new;
+			if(data.server !== process.env.SERVER) return;
+			
 			const user_position = connections.lowestAvailablePosition();
 
 			console.log(`[CONN]\t> Adding Peer`);
 			svr_config
 				.addPeer({
 					publicKey: data.client_pub_key,
-					allowedIps: [`192.168.69.${user_position}`],
+					allowedIps: [`192.168.69.${user_position}/24`],
 					persistentKeepalive: 25
 				});
-
-			console.log(svr_config);
 
 			console.log(`[ALLOC]\t> Allocating INDEX::${user_position}`);
 			connections
@@ -140,8 +140,6 @@ const server = async () => {
 					awaiting: false,
 					server_endpoint: ip.address()
 				});
-
-			console.log(connections.at(user_position));
 
 			console.log("[CONN]\t> Publishing to SUPABASE", connections.at(user_position));
 			supabase
