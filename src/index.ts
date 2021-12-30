@@ -58,7 +58,7 @@ const server = async () => {
 			postDown: ['iptables -D FORWARD -i reseda -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE'],
 			listenPort: 51820,
 		},
-		filePath
+		filePath,
 	});
 
 	writeConfig({ 
@@ -79,7 +79,7 @@ const server = async () => {
 	 ___________________________________________________________________________  ▄██ █▄▄ █▀▄ ▀▄▀ █▄▄ █▀▄
 	`)
 
-	console.log(`Registering ${process.env.SERVER} (@ ${ip.address()}`);
+	console.log(`[DATA] > Registering ${process.env.SERVER} (@ ${ip.address()})`);
 
 	// Register Server
 	await supabase
@@ -114,14 +114,15 @@ const server = async () => {
 			const data: Partial<Connection> = payload.new;
 			const user_position = connections.lowestAvailablePosition();
 
-			console.log(`Connecting [${data.author}] \t no. (${user_position})`);
-
+			console.log(`[CONN] > Adding Peer`);
 			svr_config.addPeer({
 				publicKey: data.client_pub_key,
 				allowedIps: [`192.168.69.${user_position}`],
 				persistentKeepalive: 25
 			});
 
+
+			console.log(`[ALLOC] > Allocating (${user_position})`);
 			connections.fill(user_position, {
 				id: data.id ?? 0,
 				author: data.author ?? "",
@@ -133,6 +134,7 @@ const server = async () => {
 				server_endpoint: ip.address()
 			});
 
+			console.log("[CONN] > Publishing to SUPABASE");
 			supabase.from("open_connections").update({
 				client_number: connections,
 				awaiting: false,
