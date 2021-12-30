@@ -10,9 +10,7 @@ if(!process.env.KEY) void(0);
 const supabase = createClient("https://xsmomhokxpwacbhotdmk.supabase.co", process.env.KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MDU4MTE3MiwiZXhwIjoxOTU2MTU3MTcyfQ.nGtdGflJcGTdegPJwg3FkSQJvKz_VGNzmmml2hj6rQg") 
 const filePath = path.join(__dirname, '/configs', './reseda.conf');
 
-var connections = 0;
-
-type Packet = {
+type Connection = {
 	id: number,
 	author: string,
 	server: string,
@@ -22,6 +20,30 @@ type Packet = {
 	awaiting: boolean,
 	server_endpoint: string
 }
+
+class SpaceAllocator {
+	space: Map<number, Connection>;
+
+	constructor() {
+		this.space = new Map<number, Connection>();
+	}
+
+	lowestAvailablePosition(smallest_key: number = 2) {
+		let lowest_free_space = smallest_key;
+
+		this.space.forEach((__, key: number) => {
+			if(key == lowest_free_space) lowest_free_space = key+1; 
+		});
+	  
+		return lowest_free_space;
+	}
+
+	fill(index: number, data: Connection) {
+		this.space.set(index, data);
+	}
+}
+
+const connections = new SpaceAllocator();
 
 const server = async () => {
 	const svr_config = new WgConfig({
@@ -73,16 +95,38 @@ const server = async () => {
 
 	supabase
 		.from('open_connections')
-		.on('INSERT', (payload) => {
-			const data: Packet = payload.new;
-			console.log(`Connecting [${data.author}] \t no. (${data.client_number})`);
+		.on('DELETE', (payload) => {
+			const data: Connection = payload.old;
+			// How do we update connections, as the left user may not be the last user,
+			// Hence - we may need to include a map of available spots and propagate top to bottom (FCFS)
 
-			connections++;
+			if(data.client_pub_key) svr_config.removePeer(data.client_pub_key);
+			console.log("REMOVING::", data, payload);
+		}).subscribe();
+
+	supabase
+		.from('open_connections')
+		.on('INSERT', (payload) => {
+			const data: Partial<Connection> = payload.new;
+			const user_position = connections.lowestAvailablePosition();
+
+			console.log(`Connecting [${data.author}] \t no. (${user_position})`);
 
 			svr_config.addPeer({
 				publicKey: data.client_pub_key,
-				allowedIps: [`192.168.69.${connections+1 ?? '2'}`],
+				allowedIps: [`192.168.69.${user_position}`],
 				persistentKeepalive: 25
+			});
+
+			connections.fill(user_position, {
+				id: data.id ?? 0,
+				author: data.author ?? "",
+				server: data.server ?? process.env.SERVER ?? "error-0",
+				client_pub_key: data.client_pub_key ?? "",
+				svr_pub_key: svr_config.publicKey ?? "",
+				client_number: user_position,
+				awaiting: false,
+				server_endpoint: ip.address()
 			});
 
 			supabase.from("open_connections").update({
@@ -94,17 +138,6 @@ const server = async () => {
 				await svr_config.save();
 			});
 		
-		}).subscribe();
-
-	supabase
-		.from('open_connections')
-		.on('DELETE', (payload) => {
-			const data: Packet = payload.old;
-			// How do we update connections, as the left user may not be the last user,
-			// Hence - we may need to include a map of available spots and propagate top to bottom (FCFS)
-
-			if(data.client_pub_key) svr_config.removePeer(data.client_pub_key);
-			console.log("REMOVING::", data, payload);
 		}).subscribe();
 }
 
