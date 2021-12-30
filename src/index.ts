@@ -73,41 +73,38 @@ const server = async () => {
 
 	supabase
 		.from('open_connections')
-		.on('*', (payload) => {
+		.on('INSERT', (payload) => {
 			const data: Packet = payload.new;
 			console.log(`Connecting [${data.author}] \t no. (${data.client_number})`);
 
-			if(
-				data.server == process.env.SERVER 
-				&& data.awaiting 
-				&& (payload.eventType == "INSERT" || payload.eventType == "UPDATE")
-			) {
-				connections++;
+			connections++;
 
-				svr_config.addPeer({
-					publicKey: data.client_pub_key,
-					allowedIps: [`192.168.69.${connections+1 ?? '2'}`],
-					persistentKeepalive: 25
-				});
+			svr_config.addPeer({
+				publicKey: data.client_pub_key,
+				allowedIps: [`192.168.69.${connections+1 ?? '2'}`],
+				persistentKeepalive: 25
+			});
 
-				supabase.from("open_connections").update({
-					client_number: connections,
-					awaiting: false,
-					svr_pub_key: svr_config.publicKey,
-					server_endpoint: ip.address()
-				}).match({ id: data.id }).then(async e => {
-					await svr_config.save();
-				});
-			}else if(
-				data.server == process.env.SERVER 
-				&& payload.eventType == "DELETE"
-			) {
-				if(data.client_pub_key) svr_config.removePeer(data.client_pub_key);
-				console.log("REMOVING::", data, payload);
-			}else {
-				console.log(data, payload.old, payload);
-			}
+			supabase.from("open_connections").update({
+				client_number: connections,
+				awaiting: false,
+				svr_pub_key: svr_config.publicKey,
+				server_endpoint: ip.address()
+			}).match({ id: data.id }).then(async e => {
+				await svr_config.save();
+			});
 		
+		}).subscribe();
+
+	supabase
+		.from('open_connections')
+		.on('DELETE', (payload) => {
+			const data: Packet = payload.old;
+			// How do we update connections, as the left user may not be the last user,
+			// Hence - we may need to include a map of available spots and propagate top to bottom (FCFS)
+
+			if(data.client_pub_key) svr_config.removePeer(data.client_pub_key);
+			console.log("REMOVING::", data, payload);
 		}).subscribe();
 }
 
