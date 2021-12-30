@@ -45,6 +45,10 @@ class SpaceAllocator {
 	totalUsers() {
 		return this.space.size;
 	}
+
+	at(index: number) {
+		return this.space.get(index);
+	}
 }
 
 const connections = new SpaceAllocator();
@@ -79,7 +83,7 @@ const server = async () => {
 	 ___________________________________________________________________________  ▄██ █▄▄ █▀▄ ▀▄▀ █▄▄ █▀▄
 	`)
 
-	console.log(`[DATA] > Registering ${process.env.SERVER} (@ ${ip.address()})`);
+	console.log(`[DATA]\t> Registering ${process.env.SERVER} (@ ${ip.address()})`);
 
 	// Register Server
 	await supabase
@@ -114,35 +118,39 @@ const server = async () => {
 			const data: Partial<Connection> = payload.new;
 			const user_position = connections.lowestAvailablePosition();
 
-			console.log(`[CONN] > Adding Peer`);
-			svr_config.addPeer({
-				publicKey: data.client_pub_key,
-				allowedIps: [`192.168.69.${user_position}`],
-				persistentKeepalive: 25
-			});
+			console.log(`[CONN]\t> Adding Peer`);
+			svr_config
+				.addPeer({
+					publicKey: data.client_pub_key,
+					allowedIps: [`192.168.69.${user_position}`],
+					persistentKeepalive: 25
+				});
 
+			console.log(`[ALLOC]\t> Allocating INDEX::${user_position}`);
+			connections
+				.fill(user_position, {
+					id: data.id ?? 0,
+					author: data.author ?? "",
+					server: data.server ?? process.env.SERVER ?? "error-0",
+					client_pub_key: data.client_pub_key ?? "",
+					svr_pub_key: svr_config.publicKey ?? "",
+					client_number: user_position,
+					awaiting: false,
+					server_endpoint: ip.address()
+				});
 
-			console.log(`[ALLOC] > Allocating (${user_position})`);
-			connections.fill(user_position, {
-				id: data.id ?? 0,
-				author: data.author ?? "",
-				server: data.server ?? process.env.SERVER ?? "error-0",
-				client_pub_key: data.client_pub_key ?? "",
-				svr_pub_key: svr_config.publicKey ?? "",
-				client_number: user_position,
-				awaiting: false,
-				server_endpoint: ip.address()
-			});
-
-			console.log("[CONN] > Publishing to SUPABASE");
-			supabase.from("open_connections").update({
-				client_number: connections,
-				awaiting: false,
-				svr_pub_key: svr_config.publicKey,
-				server_endpoint: ip.address()
-			}).match({ id: data.id }).then(async e => {
-				await svr_config.save();
-			});
+			console.log("[CONN]\t> Publishing to SUPABASE", connections.at(user_position));
+			supabase
+				.from("open_connections")
+				.update({
+					client_number: connections,
+					awaiting: false,
+					svr_pub_key: svr_config.publicKey,
+					server_endpoint: ip.address()
+				}).match({ id: data.id })
+				.then(async e => {
+					await svr_config.save();
+				});
 		
 		}).subscribe();
 }
