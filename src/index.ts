@@ -143,12 +143,13 @@ const server = async () => {
 			supabase
 				.from("open_connections")
 				.update({
-					client_number: connections,
+					client_number: user_position,
 					awaiting: false,
 					svr_pub_key: svr_config.publicKey,
 					server_endpoint: ip.address()
 				}).match({ id: data.id })
 				.then(async e => {
+					console.log(e);
 					await svr_config.save();
 				});
 		
