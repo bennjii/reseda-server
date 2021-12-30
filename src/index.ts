@@ -126,7 +126,7 @@ const server = async () => {
 					persistentKeepalive: 25
 				});
 
-			console.log(svr_config.toJson());
+			console.log(svr_config);
 
 			console.log(`[ALLOC]\t> Allocating INDEX::${user_position}`);
 			connections
