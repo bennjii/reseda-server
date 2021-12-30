@@ -56,7 +56,7 @@ const connections = new SpaceAllocator();
 const server = async () => {
 	const svr_config = new WgConfig({
 		wgInterface: {
-			address: ['192.126.69.1/24'],
+			address: ['192.168.69.1/24'],
 			name: process.env.SERVER ?? "default-1",
 			postUp: ['iptables -A FORWARD -i reseda -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE'],
 			postDown: ['iptables -D FORWARD -i reseda -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE'],
