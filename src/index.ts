@@ -87,6 +87,11 @@ const server = async () => {
 
 	console.log(`[DATA]\t> Registering ${process.env.SERVER} (@ ${ip.address()})`);
 
+	svr_config.peers?.forEach(e => {
+		console.log("IP", e.allowedIps);
+		// connections.fill()
+	})
+
 	// Register Server
 	await supabase
 		.from('server_registry')
