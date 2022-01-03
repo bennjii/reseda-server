@@ -1,7 +1,7 @@
 require('dotenv').config()
 
 import { createClient } from '@supabase/supabase-js'
-import { WgConfig, writeConfig } from 'wireguard-tools'
+import { checkWgIsInstalled, WgConfig, writeConfig } from 'wireguard-tools'
 import path from 'path'
 import ip from "ip"
 
@@ -54,6 +54,8 @@ class SpaceAllocator {
 const connections = new SpaceAllocator();
 
 const server = async () => {
+	await verifyIntegrity();
+
 	const svr_config = new WgConfig({
 		wgInterface: {
 			address: ['192.168.69.1/24'],
@@ -156,6 +158,30 @@ const server = async () => {
 				});
 		
 		}).subscribe();
+
+	process.on("exit", () => {
+		supabase
+			.from("server_registry")
+			.delete()
+			.match({
+				id: process.env.SERVER
+			})
+	})
+}
+
+const verifyIntegrity = async () => {
+	if(!process.env.SERVER || !process.env.TZ || !process.env.COUNTRY || !process.env.VIRTUAL) {
+		console.error("[ERR MISSING ENV] Missing Environment Variables, Requires 'SERVER', 'TZ', 'COUNTRY', and 'VIRTUAL'. These should be stored in a .env file at the root of the project directory. ");
+		process.exit(2);
+	}else if(!supabase) {
+		console.error("[ERR NO SUPABASE] Reseda VPN requires supabase in order to verify integrity and maintain tunnels, try running `yarn install` or `npm install` to install all package dependencies. ");
+		process.exit(2);
+	}else if(!checkWgIsInstalled()) {
+		console.error("[ERR NO WIREGUARD] Reseda VPN Server Requires an installation of wireguard to operate, the latest version can be installed from www.wireguard.com ");
+		process.exit(2);
+	}
+
+	return true;
 }
 
 server();
