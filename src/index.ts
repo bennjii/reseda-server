@@ -154,7 +154,7 @@ const server = async () => {
 				}).match({ id: data.id })
 				.then(async e => {
 					console.log(e);
-					await svr_config.save();
+					await svr_config.save({ noUp: true });
 				});
 		
 		}).subscribe();
