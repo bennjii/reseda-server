@@ -160,11 +160,15 @@ const server = async () => {
 		}).subscribe();
 
 	process.on("exit", () => {
+		console.log(`Process Quitting > Sending Finalized`);
+
 		supabase
 			.from("server_registry")
 			.delete()
 			.match({
 				id: process.env.SERVER
+			}).then(e => {
+				console.log(`Process Quit.`)
 			})
 	})
 }
