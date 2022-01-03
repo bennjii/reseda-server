@@ -159,18 +159,22 @@ const server = async () => {
 		
 		}).subscribe();
 
-	process.on("exit", () => {
-		console.log(`Process Quitting > Sending Finalized`);
+	process.on("SIGINT", quitQuietly);
+	process.on("exit", quitQuietly);
+	process.on("uncaughtException", quitQuietly);
+}
 
-		supabase
-			.from("server_registry")
-			.delete()
-			.match({
-				id: process.env.SERVER
-			}).then(e => {
-				console.log(`Process Quit.`)
-			})
-	})
+const quitQuietly = () => {
+	console.log(`Process Quitting > Sending Finalized`);
+
+	supabase
+		.from("server_registry")
+		.delete()
+		.match({
+			id: process.env.SERVER
+		}).then(e => {
+			console.log(`Process Quit.`)
+		})
 }
 
 const verifyIntegrity = async () => {
