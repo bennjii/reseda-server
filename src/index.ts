@@ -159,12 +159,12 @@ const server = async () => {
 		
 		}).subscribe();
 
-	process.on("SIGINT", quitQuietly);
-	process.on("exit", quitQuietly);
-	process.on("uncaughtException", quitQuietly);
+	process.on("SIGINT", () => quitQuietly("s"));
+	process.on("exit", () => quitQuietly("e"));
+	process.on("uncaughtException", () => quitQuietly("s"));
 }
 
-const quitQuietly = () => {
+const quitQuietly = (type: string) => {
 	console.log(`Process Quitting > Sending Finalized`);
 
 	supabase
@@ -174,7 +174,8 @@ const quitQuietly = () => {
 			id: process.env.SERVER
 		}).then(e => {
 			console.log(`Process Quit.`);
-			process.exit(0);
+			if(type == "s") process.exit(2);
+			else return;
 		})
 }
 
