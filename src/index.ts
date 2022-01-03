@@ -173,7 +173,8 @@ const quitQuietly = () => {
 		.match({
 			id: process.env.SERVER
 		}).then(e => {
-			console.log(`Process Quit.`)
+			console.log(`Process Quit.`);
+			process.exit(0);
 		})
 }
 
