@@ -90,7 +90,9 @@ const server = async () => {
 	svr_config.peers?.forEach(e => {
 		console.log("IP", e.allowedIps);
 		// connections.fill()
-	})
+	});
+
+	console.log(connections);
 
 	// Register Server
 	await supabase
@@ -164,9 +166,9 @@ const server = async () => {
 		
 		}).subscribe();
 
-	process.on("SIGINT", () => quitQuietly("s"));
-	process.on("exit", () => quitQuietly("e"));
-	process.on("uncaughtException", () => quitQuietly("s"));
+	process.on("SIGINT", () => { quitQuietly("s") });
+	process.on("exit", () => { quitQuietly("e") });
+	process.on("uncaughtException", () => { quitQuietly("s") });
 }
 
 const quitQuietly = (type: string) => {
