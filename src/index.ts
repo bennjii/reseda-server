@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { checkWgIsInstalled, WgConfig, writeConfig } from 'wireguard-tools'
 import path from 'path'
 import ip from "ip"
+import displayTitle from './title'
 
 if(!process.env.KEY) void(0);
 
@@ -74,16 +75,7 @@ const server = async () => {
 
 	await svr_config.down();
 
-	console.log(`
-	 
-	 ██████╗ ███████╗███████╗███████╗██████╗  █████╗ ██╗   ██╗██████╗ ███╗   ██╗
-	 ██╔══██╗██╔════╝██╔════╝██╔════╝██╔══██╗██╔══██╗██║   ██║██╔══██╗████╗  ██║
-	 ██████╔╝█████╗  ███████╗█████╗  ██║  ██║███████║██║   ██║██████╔╝██╔██╗ ██║
-	 ██╔══██╗██╔══╝  ╚════██║██╔══╝  ██║  ██║██╔══██║╚██╗ ██╔╝██╔═══╝ ██║╚██╗██║
-	 ██║  ██║███████╗███████║███████╗██████╔╝██║  ██║ ╚████╔╝ ██║     ██║ ╚████║
-	 ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝╚═════╝ ╚═╝  ╚═╝  ╚═══╝  ╚═╝     ╚═╝  ╚═══╝  ▄▀▀ ██▀ █▀▄ █ █ ██▀ █▀▄
-	 ___________________________________________________________________________  ▄██ █▄▄ █▀▄ ▀▄▀ █▄▄ █▀▄
-	`)
+	displayTitle();
 
 	console.log(`[DATA]\t> Registering ${process.env.SERVER} (@ ${ip.address()})`);
 
@@ -166,26 +158,51 @@ const server = async () => {
 		
 		}).subscribe();
 
-	process.on("SIGINT", () => { quitQuietly("s") });
-	process.on("exit", () => { quitQuietly("e") });
-	process.on("uncaughtException", () => { quitQuietly("s") });
+	// This should never execute by code, rather as a result of the following handlers - handles normal exit protocols.
+	process.on("exit", () => { console.log(`Process has exited normally.`) });
+
+	// Handle CTRL + C forced quits.
+	process.on("SIGINT", () => { quitQuietly("forced", svr_config) });
+
+	// Handle error quits.
+	process.on("uncaughtException", () => { quitQuietly("err", svr_config) });
 }
 
-const quitQuietly = (type: string) => {
+/** 
+ * Exits the program whilst ensuring a proper disconnect of the reseda-server from the mesh.
+ * 
+ * @returns async void
+ */
+const quitQuietly = async (type: "forced" | "err", config: WgConfig) => {
 	console.log(`Process Quitting > Sending Finalized`);
 
+	// Remove all Wireguard Peers from the connection, as disconnect handlers will no longer respond 
+	// such that users may be stuck between connections as by the server with open-ended propagations and protocols. 
+	config.peers?.forEach(peer => {
+		if(peer?.publicKey) config.removePeer(peer.publicKey);
+	});
+
+	// Pull down the client and disconnect all peers. Peers must now listen for the following registry removal, and disconnect themselves both virtually and physically.
+	await config.down();
+
+	// Remove the server from the registry as it will no longer
 	supabase
 		.from("server_registry")
 		.delete()
 		.match({
 			id: process.env.SERVER
 		}).then(e => {
-			console.log(`Process Quit.`);
-			if(type == "s") process.exit(2);
-			else return;
+			process.exit(0);
 		})
 }
 
+/**
+ * Verifies the install of reseda-server, by validating both the existence and value of the following:
+ * - Environment-File: reseda-server requires `SERVER`, `TZ`, `COUNTRY`, and `VIRTUAL` tags under a .env stored in the servers root directory, or passed into the container.
+ * - Supabase: supabase-js is a required install for reseda-server and is installed automatically after running yarn.
+ * - Wireguard: reseda works under the wireguard protocol and requires both the wireguard-tools node library, and a working new install of wireguard from https://wireguard.com
+ * @returns A promised truthy boolean if valid, otherwise - exits with exit code `2`. 
+ */
 const verifyIntegrity = async () => {
 	if(!process.env.SERVER || !process.env.TZ || !process.env.COUNTRY || !process.env.VIRTUAL) {
 		console.error("[ERR MISSING ENV] Missing Environment Variables, Requires 'SERVER', 'TZ', 'COUNTRY', and 'VIRTUAL'. These should be stored in a .env file at the root of the project directory. ");
