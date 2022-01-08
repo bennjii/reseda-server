@@ -1,7 +1,9 @@
-version: "2.1"
+version: '3.7'
+
 services:
+
   wireguard:
-    image: ghcr.io/linuxserver/wireguard
+    image: unrealgdev/reseda-server
     container_name: wireguard
     cap_add:
       - NET_ADMIN
@@ -9,22 +11,14 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Asia/Singapore
-      - SERVERPORT=51820 #optional
-      - PEERDNS=94.140.14.14 # Uses AdGuard DNS Server
-      - PEERS=1,2,3,4,5
+      - TZ=Pacific/NewZealand
+      - SERVERPORT=51820
+      - ALLOWEDIPS=0.0.0.0/0
     volumes:
-      - /path/to/appdata/config:/config
+      -  ./config/wireguard:/config
       - /lib/modules:/lib/modules
     ports:
-      - 51820:51820/tcp
+      - 51820:51820/udp
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
     restart: unless-stopped
-  
-  server:
-    image: node:latest
-    command: sh -c "yarn build && yarn serve"
-    working_dir: /app
-    volumes:
-      - ./:/app

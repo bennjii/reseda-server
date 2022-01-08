@@ -1,20 +1,63 @@
-FROM ubuntu
+FROM ghcr.io/linuxserver/baseimage-ubuntu:bionic
 
-WORKDIR /app
+# set version label
+ARG BUILD_DATE
+ARG VERSION
+ARG WIREGUARD_RELEASE
+LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DATE}"
+LABEL maintainer="aptalca"
 
-# Run Default Apt Update and install sudo
-RUN apt-get update && \
-      apt-get -y install sudo
+ENV DEBIAN_FRONTEND="noninteractive"
 
-# Install all wireguard required libraries
-RUN apt-get install -y apt-transport-https 
-RUN apt-get install -y curl 
-RUN apt-get install -y software-properties-common 
-RUN apt-get install -y wireguard 
-RUN apt-get install -y iproute2
-RUN apt-get install -y net-tools
-
-RUN echo "Wireguard Installed, installing NODEJS..."
+RUN \
+ echo "**** install dependencies ****" && \
+ apt-get update && \
+ apt-get install -y --no-install-recommends \
+    sudo \
+	bc \
+	build-essential \
+	curl \
+	dkms \
+	git \
+	gnupg \ 
+	ifupdown \
+	iproute2 \
+	iptables \
+	iputils-ping \
+	jq \
+	libc6 \
+	libelf-dev \
+	net-tools \
+	openresolv \
+	perl \
+	pkg-config \
+	qrencode && \
+ echo "**** install wireguard-tools ****" && \
+ if [ -z ${WIREGUARD_RELEASE+x} ]; then \
+	WIREGUARD_RELEASE=$(curl -sX GET "https://api.github.com/repos/WireGuard/wireguard-tools/tags" \
+	| jq -r .[0].name); \
+ fi && \
+ cd /app && \
+ git clone https://git.zx2c4.com/wireguard-linux-compat && \
+ git clone https://git.zx2c4.com/wireguard-tools && \
+ cd wireguard-tools && \
+ git checkout "${WIREGUARD_RELEASE}" && \
+ make -C src -j$(nproc) && \
+ make -C src install && \
+ echo "**** install CoreDNS ****" && \
+ COREDNS_VERSION=$(curl -sX GET "https://api.github.com/repos/coredns/coredns/releases/latest" \
+	| awk '/tag_name/{print $4;exit}' FS='[""]' | awk '{print substr($1,2); }') && \
+ curl -o \
+	/tmp/coredns.tar.gz -L \
+	"https://github.com/coredns/coredns/releases/download/v${COREDNS_VERSION}/coredns_${COREDNS_VERSION}_linux_amd64.tgz" && \
+ tar xf \
+	/tmp/coredns.tar.gz -C \
+	/app && \
+ echo "**** clean up ****" && \
+ rm -rf \
+	/tmp/* \
+	/var/lib/apt/lists/* \
+	/var/tmp/*
 
 #  Install Node16
 RUN curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
@@ -32,11 +75,7 @@ RUN yarn install
 COPY . .
 RUN yarn build
 
-# Forward IP, and allow ssh and port 51820/tcp.
-# RUN sudo sysctl -w net.ipv4.ip_foward=1
-RUN apt-get install -y ufw
-RUN sudo ufw allow ssh
-RUN sudo ufw allow 51820/tcp
-# RUN sudo ufw enable
+# ports and volumes
+EXPOSE 51820/udp
 
 CMD ["sudo", "yarn", "serve"]
