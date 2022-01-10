@@ -18,7 +18,15 @@ services:
       -  ./config/wireguard:/config
       - /lib/modules:/lib/modules
     ports:
+      # Wireguard
       - 51820:51820/udp
+      # Supabase-db
+      - 5432:5432/tcp
+      # Supabase-Studio
+      - 3000:3000/tcp
+      # Supabase-Kong
+      - 8000:8000/tcp
+      - 8443:8443/tcp
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
     restart: unless-stopped
