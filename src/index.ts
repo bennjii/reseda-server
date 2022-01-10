@@ -3,7 +3,7 @@ require('dotenv').config()
 import { createClient } from '@supabase/supabase-js'
 import { checkWgIsInstalled, WgConfig, writeConfig } from 'wireguard-tools'
 import path from 'path'
-import * as dockerIpTools from "docker-ip-get";
+import publicIp from 'public-ip';
 import displayTitle from './title'
 import ip from 'ip';
 
@@ -56,7 +56,7 @@ class SpaceAllocator {
 const connections = new SpaceAllocator();
 const server = async () => {
 	await verifyIntegrity();
-	const ip_a = await dockerIpTools.getHostIp() ?? ip.address()
+	const ip_a = await publicIp.v4() ?? ip.address()
 
 
 	const svr_config = new WgConfig({
