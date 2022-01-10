@@ -3,8 +3,9 @@ require('dotenv').config()
 import { createClient } from '@supabase/supabase-js'
 import { checkWgIsInstalled, WgConfig, writeConfig } from 'wireguard-tools'
 import path from 'path'
-import ip from "ip"
+import * as dockerIpTools from "docker-ip-get";
 import displayTitle from './title'
+import ip from 'ip';
 
 if(!process.env.KEY) void(0);
 
@@ -53,9 +54,10 @@ class SpaceAllocator {
 }
 
 const connections = new SpaceAllocator();
-
 const server = async () => {
 	await verifyIntegrity();
+	const ip_a = await dockerIpTools.getHostIp() ?? ip.address()
+
 
 	const svr_config = new WgConfig({
 		wgInterface: {
@@ -77,7 +79,7 @@ const server = async () => {
 
 	displayTitle();
 
-	console.log(`[DATA]\t> Registering ${process.env.SERVER} (@ ${ip.address()})`);
+	console.log(`[DATA]\t> Registering ${process.env.SERVER} (@ ${ip_a})`);
 
 	svr_config.peers?.forEach(e => {
 		console.log("IP", e.allowedIps);
@@ -94,7 +96,7 @@ const server = async () => {
 			location: process.env.TZ,
 			country: process.env.COUNTRY,
 			virtual: process.env.VIRTUAL,
-			hostname: ip.address()
+			hostname: ip_a
 		});
 
     await svr_config.generateKeys(); //{ preSharedKey: true }
@@ -139,7 +141,7 @@ const server = async () => {
 					svr_pub_key: svr_config.publicKey ?? "",
 					client_number: user_position,
 					awaiting: false,
-					server_endpoint: ip.address()
+					server_endpoint: ip_a
 				});
 
 			console.log("[CONN]\t> Publishing to SUPABASE", connections.at(user_position));
@@ -149,7 +151,7 @@ const server = async () => {
 					client_number: user_position,
 					awaiting: false,
 					svr_pub_key: svr_config.publicKey,
-					server_endpoint: ip.address()
+					server_endpoint: ip_a
 				}).match({ id: data.id })
 				.then(async e => {
 					console.log(e);
