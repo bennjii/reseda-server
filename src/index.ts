@@ -3,10 +3,10 @@ require('dotenv').config()
 import { createClient } from '@supabase/supabase-js'
 import { checkWgIsInstalled, WgConfig, writeConfig } from 'wireguard-tools'
 import path from 'path'
-import publicIp from 'public-ip';
 import displayTitle from './title'
 import ip from 'ip';
 
+const getIP = require('external-ip')();
 if(!process.env.KEY) void(0);
 
 const supabase = createClient("https://xsmomhokxpwacbhotdmk.supabase.co", process.env.KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MDU4MTE3MiwiZXhwIjoxOTU2MTU3MTcyfQ.nGtdGflJcGTdegPJwg3FkSQJvKz_VGNzmmml2hj6rQg") 
@@ -56,8 +56,7 @@ class SpaceAllocator {
 const connections = new SpaceAllocator();
 const server = async () => {
 	await verifyIntegrity();
-	const ip_a = await publicIp.v4() ?? ip.address()
-
+	const ip_a = await getIP((__: any, ip: string) => ip) ?? ip.address()
 
 	const svr_config = new WgConfig({
 		wgInterface: {

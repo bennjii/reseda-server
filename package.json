@@ -33,6 +33,7 @@
     "docker-host-ip": "^1.0.1",
     "docker-ip-get": "^1.1.5",
     "dotenv": "^10.0.0",
+    "external-ip": "^2.3.1",
     "ip": "^1.1.5",
     "lodash.mergewith": "^4.6.2",
     "public-ip": "^5.0.0",
