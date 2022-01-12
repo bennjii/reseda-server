@@ -95,7 +95,8 @@ const server = async () => {
 			location: process.env.TZ,
 			country: process.env.COUNTRY,
 			virtual: process.env.VIRTUAL,
-			hostname: ip_a
+			flag: process.env.FLAG,
+			hostname: ip_a,
 		});
 
     await svr_config.generateKeys(); //{ preSharedKey: true }
@@ -143,7 +144,7 @@ const server = async () => {
 					server_endpoint: ip_a
 				});
 
-			console.log("[CONN]\t> Publishing to SUPABASE", connections.at(user_position));
+			console.log("[CONN]\t> Publishing to SUPABASE");
 			supabase
 				.from("open_connections")
 				.update({
@@ -153,7 +154,6 @@ const server = async () => {
 					server_endpoint: ip_a
 				}).match({ id: data.id })
 				.then(async e => {
-					console.log(e);
 					await svr_config.save();
 				});
 		
@@ -205,8 +205,8 @@ const quitQuietly = async (type: "forced" | "err", config: WgConfig) => {
  * @returns A promised truthy boolean if valid, otherwise - exits with exit code `2`. 
  */
 const verifyIntegrity = async () => {
-	if(!process.env.SERVER || !process.env.TZ || !process.env.COUNTRY || !process.env.VIRTUAL) {
-		console.error("[ERR MISSING ENV] Missing Environment Variables, Requires 'SERVER', 'TZ', 'COUNTRY', and 'VIRTUAL'. These should be stored in a .env file at the root of the project directory. ");
+	if(!process.env.SERVER || !process.env.TZ || !process.env.COUNTRY || !process.env.VIRTUAL || !process.env.KEY || !process.env.FLAG) {
+		console.error("[ERR MISSING ENV] Missing Environment Variables, Requires 'SERVER', 'TZ', 'COUNTRY', 'VIRTUAL', 'KEY' and 'FLAG'. These should be stored in a .env file at the root of the project directory. ");
 		process.exit(2);
 	}else if(!supabase) {
 		console.error("[ERR NO SUPABASE] Reseda VPN requires supabase in order to verify integrity and maintain tunnels, try running `yarn install` or `npm install` to install all package dependencies. ");
