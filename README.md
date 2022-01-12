@@ -1,3 +1,6 @@
+# reseda-server
+The reseda-server network client for the reseda-mesh. Follow the below instructions to install on any ubuntu local or vps machine. 
+
 ## Install Process
 
 1. Create Droplet - Digital Ocean [Create Key Pair and PUTTY](https://devops.ionos.com/tutorials/use-ssh-keys-with-putty-on-windows/)
@@ -33,3 +36,15 @@
 
 All set! 
 > First time docker composure should take 2-5 minutes, after that - see the server on the public registry!
+
+
+
+---
+## Applying Updates
+
+All you need to do is run 3 commands:
+   1. `git pull`
+   2. `docker build . -t unrealgdev/reseda-server`
+   3. `docker-compose up -d`
+
+And the update is applied, well done!
