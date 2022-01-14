@@ -5,6 +5,7 @@ import { checkWgIsInstalled, WgConfig, writeConfig } from 'wireguard-tools'
 import path from 'path'
 import displayTitle from './title'
 import ip from 'ip';
+import { execSync } from 'child_process'
 
 const envIP = process.env.IP;
 if(!process.env.KEY) void(0);
@@ -85,8 +86,6 @@ const server = async () => {
 		// connections.fill()
 	});
 
-	console.log(connections);
-
 	// Register Server
 	await supabase
 		.from('server_registry')
@@ -110,6 +109,8 @@ const server = async () => {
 			const data: Connection = payload.old;
 			// How do we update connections, as the left user may not be the last user,
 			// Hence - we may need to include a map of available spots and propagate top to bottom (FCFS)
+
+			// execSync("wg show")
 
 			if(data.client_pub_key) svr_config.removePeer(data.client_pub_key);
 			console.log("REMOVING::", data, payload);
