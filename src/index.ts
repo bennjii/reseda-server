@@ -6,6 +6,7 @@ import path from 'path'
 import displayTitle from './title'
 import ip from 'ip';
 import { execSync } from 'child_process'
+// import { setInterval, setTimeout } from 'timers/promises'
 
 const envIP = process.env.IP;
 if(!process.env.KEY) void(0);
@@ -21,11 +22,14 @@ type Connection = {
 	svr_pub_key: string,
 	client_number: number,
 	awaiting: boolean,
-	server_endpoint: string
+	server_endpoint: string,
+	up: number, down: number,
+	max_up: number, max_down: number,
+	start_time: number
 }
 
 class SpaceAllocator {
-	space: Map<number, Connection>;
+	space: Map<number, Partial<Connection>>;
 
 	constructor() {
 		this.space = new Map<number, Connection>();
@@ -41,7 +45,18 @@ class SpaceAllocator {
 		return lowest_free_space;
 	}
 
-	fill(index: number, data: Connection) {
+	setMaximum(index: number, up: number, down: number) {
+		const loc = this.at(index);
+
+		if(loc) {
+			loc.max_up = up; loc.max_down = down;
+			return true;
+		}
+
+		else return false
+	}
+
+	fill(index: number, data: Partial<Connection>) {
 		this.space.set(index, data);
 	}
 
@@ -51,6 +66,20 @@ class SpaceAllocator {
 
 	at(index: number) {
 		return this.space.get(index);
+	}
+
+	remove(index: number) {
+		return this.space.delete(index);
+	}
+
+	fromId(public_key: string): Partial<Connection> {
+		let client;
+
+		this.space.forEach(e => {
+			if(e.client_pub_key == public_key) client = e;
+		});
+
+		return client ?? {};
 	}
 }
 
@@ -110,9 +139,21 @@ const server = async () => {
 			// How do we update connections, as the left user may not be the last user,
 			// Hence - we may need to include a map of available spots and propagate top to bottom (FCFS)
 
-			// execSync("wg show")
+			const client = connections.at(data.client_number);
+
+			supabase
+				.from('data_usage')
+				.insert({
+					id: data.author,
+					up: client?.up, 
+					down: client?.down,
+					server: process.env.SERVER,
+					conn_start: client?.start_time
+				})
 
 			if(data.client_pub_key) svr_config.removePeer(data.client_pub_key);
+			connections.remove(data.client_number);
+
 			console.log("REMOVING::", data, payload);
 		}).subscribe();
 
@@ -142,9 +183,17 @@ const server = async () => {
 					svr_pub_key: svr_config.publicKey ?? "",
 					client_number: user_position,
 					awaiting: false,
-					server_endpoint: ip_a
+					server_endpoint: ip_a,
+					start_time: new Date().getTime()
 				});
-
+			
+			supabase.from('users').select("*").match({
+				id: data.author
+			}).then(e => {
+				const data = e.body?.[0];
+				connections.setMaximum(user_position, data.max_up, data.max_down)
+			});
+			
 			console.log("[CONN]\t> Publishing to SUPABASE");
 			supabase
 				.from("open_connections")
@@ -156,8 +205,21 @@ const server = async () => {
 				}).match({ id: data.id })
 				.then(async e => {
 					await svr_config.save();
+
+					setInterval(async () => {
+						const usr = connections.at(user_position);
+						if(usr && usr.up && usr.down && usr.max_up && usr.max_down && usr.client_pub_key) {
+							if(usr?.up > usr?.max_up || usr?.down > usr?.max_down) {
+								// User exceeded bandwidth allocated.
+								// If plans are enabled, close connection.
+								if(process.env.THROTTLED) {
+									await svr_config.removePeer(usr.client_pub_key);
+									await svr_config.save();
+								}
+							}
+						}
+					}, 15000)
 				});
-		
 		}).subscribe();
 
 	// This should never execute by code, rather as a result of the following handlers - handles normal exit protocols.
@@ -168,6 +230,11 @@ const server = async () => {
 
 	// Handle error quits.
 	process.on("uncaughtException", () => { quitQuietly("err", svr_config) });
+
+	// Update all transfer information every 10s.
+	setInterval(() => {
+		updateTransferInfo();
+	}, 10000);
 }
 
 /** 
@@ -203,11 +270,11 @@ const quitQuietly = async (type: "forced" | "err", config: WgConfig) => {
  * - Environment-File: reseda-server requires `SERVER`, `TZ`, `COUNTRY`, and `VIRTUAL` tags under a .env stored in the servers root directory, or passed into the container.
  * - Supabase: supabase-js is a required install for reseda-server and is installed automatically after running yarn.
  * - Wireguard: reseda works under the wireguard protocol and requires both the wireguard-tools node library, and a working new install of wireguard from https://wireguard.com
- * @returns A promised truthy boolean if valid, otherwise - exits with exit code `2`. 
+ * @returns async - A promised truthy boolean if valid, otherwise - exits with exit code `2`. 
  */
 const verifyIntegrity = async () => {
-	if(!process.env.SERVER || !process.env.TZ || !process.env.COUNTRY || !process.env.VIRTUAL || !process.env.KEY || !process.env.FLAG) {
-		console.error("[ERR MISSING ENV] Missing Environment Variables, Requires 'SERVER', 'TZ', 'COUNTRY', 'VIRTUAL', 'KEY' and 'FLAG'. These should be stored in a .env file at the root of the project directory. ");
+	if(!process.env.SERVER || !process.env.TZ || !process.env.COUNTRY || !process.env.VIRTUAL || !process.env.KEY || !process.env.FLAG || !process.env.THROTTLED) {
+		console.error("[ERR MISSING ENV] Missing Environment Variables, Requires 'SERVER', 'TZ', 'COUNTRY', 'VIRTUAL', 'KEY', 'THROTTLED' and 'FLAG'. These should be stored in a .env file at the root of the project directory. ");
 		process.exit(2);
 	}else if(!supabase) {
 		console.error("[ERR NO SUPABASE] Reseda VPN requires supabase in order to verify integrity and maintain tunnels, try running `yarn install` or `npm install` to install all package dependencies. ");
@@ -218,6 +285,31 @@ const verifyIntegrity = async () => {
 	}
 
 	return true;
+}
+
+/**
+ * From all current connections, service will set the local allocation transfers for each user.
+ * When disconnecting, or committing a usage report - the usage will be pulled from the last update.
+ * @returns void
+ */
+const updateTransferInfo = () => {
+	const log = execSync("wg show reseda transfer")
+	const transfers = log.toString().split("\n");
+
+	transfers.forEach(transfer => {
+		const [ public_key, up, down ] = transfer.split("    ");
+		console.log(public_key, up, down);
+		
+		const client_num = connections.fromId(public_key).client_number;
+
+		if(client_num) {
+			const client = connections.at(client_num);
+			if(client) {
+				client.up = parseInt(up);
+				client.down = parseInt(down);
+			}
+		}
+	})
 }
 
 server();
