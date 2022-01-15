@@ -149,7 +149,7 @@ const server = async () => {
 					down: client?.down,
 					server: process.env.SERVER,
 					conn_start: client?.start_time
-				})
+				}).then(e => console.log(e));	
 
 			if(data.client_pub_key) svr_config.removePeer(data.client_pub_key);
 			connections.remove(data.client_number);
@@ -213,8 +213,16 @@ const server = async () => {
 								// User exceeded bandwidth allocated.
 								// If plans are enabled, close connection.
 								if(process.env.THROTTLED) {
-									await svr_config.removePeer(usr.client_pub_key);
-									await svr_config.save();
+									supabase
+										.from('open_connections')
+										.delete()
+										.match({
+											id: usr.id
+										})
+										.then(async e => {
+											if(usr.client_pub_key) await svr_config.removePeer(usr.client_pub_key);
+											await svr_config.save();
+										})
 								}
 							}
 						}
@@ -299,7 +307,9 @@ const updateTransferInfo = () => {
 	transfers.forEach(transfer => {
 		const [ public_key, up, down ] = transfer.split("    ");
 		console.log(public_key, up, down);
-		
+
+		if(!public_key || !up || !down) return; 
+
 		const client_num = connections.fromId(public_key).client_number;
 
 		if(client_num) {

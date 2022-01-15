@@ -27,6 +27,7 @@ The reseda-server network client for the reseda-mesh. Follow the below instructi
     LOCATION="LAT:: <latitude> LONG:: <longitude>"
     IP=<server_hostname>
     KEY=<supabase_higher_auth_key>
+    THROTTLED=<true means bandwidth capped>
  ```
  - Save using `CTRL + S`
  - Exit using `CTRL + X`
