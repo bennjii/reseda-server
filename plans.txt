@@ -1,0 +1,19 @@
+Pay-As-You-Go Plans
+
+Free Tier ~ (Cannot Exceed 5GB Usage)  ]] - Costs $0.05/mo to me.
+    - 5GB Free per Month
+    - 50MB/s Max Transfer Rate
+    - 1 Connection per Account
+
+Reseda ~ (150GB => $2.90/mo - 145GB Cost) 
+    - Unlimited Data ($20/1TB)
+    - First 5GB Free
+    - 500MB/s Max Transfer Rate
+    - 2 Connections per Account
+
+Reseda PRO ~ (150GB => $3.50/mo - 145GB Cost)
+    - Unlimited Data ($24/1TB)
+    - First 5GB Free
+    - Uncapped Transfer Rate (est. max ~800MB/s)
+    - 5 Connections per Account 
+
