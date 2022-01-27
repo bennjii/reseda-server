@@ -191,19 +191,22 @@ const server = async () => {
 			
 			supabase.from('users').select("*").match({
 				id: data.author
-			}).then(e => {
+			}).then(async e => {
 				const data: ResedaUser = e.body?.[0];
+				if(!data) return;
 
-				// Query current 'monthy'-design'd month - usage statistics - determine current remaining usage, for active disconnect ability (will not execute under pre-release - unlimited data cap leniency).
-				supabase.rpc('get_monthy_usage', {
-					user_id: data.id
-				}).then(e => {
-					// use maximum and known theoretical from ResedaUser to derive the current usage remaining under the [FREE-TIER].
-					// If the user is a paid user, they do not conform to this, and their usage is monitored for payment use only, 
-					// but their maximum becomes 150GB as a reference usage, but is not acted upon - only for statistical analysis (deviation as such).
-					console.log("RPC Response:", e);
-				})
+				// Query current 'monthy'-design'd month - usage statistics - determine current remaining usage, for active disconnect ability 
+				// (will not execute under pre-release - unlimited data cap leniency).
+				// use maximum and known theoretical from ResedaUser to derive the current usage remaining under the [FREE-TIER].
+				// If the user is a paid user, they do not conform to this, and their usage is monitored for payment use only, 
+				// but their maximum becomes 150GB as a reference usage, but is not acted upon - only for statistical analysis (deviation as such).
 
+				let { data: usage, error } = await supabase
+					.rpc('get_monthy_usage', {
+						user_id: data.id
+					})
+
+				console.log("OUT:", usage, error);
 				connections.setMaximum(user_position, data.max_up, data.max_down)
 			});
 			
