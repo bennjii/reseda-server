@@ -196,12 +196,12 @@ const server = async () => {
 
 				// Query current 'monthy'-design'd month - usage statistics - determine current remaining usage, for active disconnect ability (will not execute under pre-release - unlimited data cap leniency).
 				supabase.rpc('get_monthy_usage', {
-					user_id: data
+					user_id: data.id
 				}).then(e => {
 					// use maximum and known theoretical from ResedaUser to derive the current usage remaining under the [FREE-TIER].
 					// If the user is a paid user, they do not conform to this, and their usage is monitored for payment use only, 
 					// but their maximum becomes 150GB as a reference usage, but is not acted upon - only for statistical analysis (deviation as such).
-					console.log(e);
+					console.log("RPC Response:", e);
 				})
 
 				connections.setMaximum(user_position, data.max_up, data.max_down)
