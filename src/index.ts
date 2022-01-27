@@ -7,6 +7,7 @@ import displayTitle from './title'
 import ip from 'ip';
 import { execSync } from 'child_process'
 import { randomUUID } from 'crypto'
+import { Connection, ResedaUser } from './@types/reseda'
 // import { setInterval, setTimeout } from 'timers/promises'
 
 const envIP = process.env.IP;
@@ -14,20 +15,6 @@ if(!process.env.KEY) void(0);
 
 const supabase = createClient("https://xsmomhokxpwacbhotdmk.supabase.co", process.env.KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MDU4MTE3MiwiZXhwIjoxOTU2MTU3MTcyfQ.nGtdGflJcGTdegPJwg3FkSQJvKz_VGNzmmml2hj6rQg") 
 const filePath = path.join(__dirname, '/configs', './reseda.conf');
-
-type Connection = {
-	id: number,
-	author: string,
-	server: string,
-	client_pub_key: string,
-	svr_pub_key: string,
-	client_number: number,
-	awaiting: boolean,
-	server_endpoint: string,
-	up: number, down: number,
-	max_up: number, max_down: number,
-	start_time: number
-}
 
 class SpaceAllocator {
 	space: Map<number, Partial<Connection>>;
@@ -205,10 +192,17 @@ const server = async () => {
 			supabase.from('users').select("*").match({
 				id: data.author
 			}).then(e => {
-				const data = e.body?.[0];
+				const data: ResedaUser = e.body?.[0];
 
-				// Query current usage statistics - determine current remaining usage, for active disconnect ability (will not execute under pre-release - unlimited data cap leniency).
-				// supabase.from('data_usage').select("up, down, user { max_up, max_down id }, conn_end").
+				// Query current 'monthy'-design'd month - usage statistics - determine current remaining usage, for active disconnect ability (will not execute under pre-release - unlimited data cap leniency).
+				supabase.rpc('get_monthy_usage', {
+					user_id: data
+				}).then(e => {
+					// use maximum and known theoretical from ResedaUser to derive the current usage remaining under the [FREE-TIER].
+					// If the user is a paid user, they do not conform to this, and their usage is monitored for payment use only, 
+					// but their maximum becomes 150GB as a reference usage, but is not acted upon - only for statistical analysis (deviation as such).
+					console.log(e);
+				})
 
 				connections.setMaximum(user_position, data.max_up, data.max_down)
 			});
