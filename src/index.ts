@@ -155,14 +155,14 @@ const server = async () => {
 					up: client?.up, 
 					down: client?.down,
 					server: process.env.SERVER,
-					conn_start: client?.start_time
+					conn_start: client?.start_time ? new Date(client?.start_time) : new Date(Date.now())
 				}).then(e => console.log(e));	
 
 			
 			if(data.client_pub_key) {
-				await svr_config.down()
+				await svr_config.down();
 				await svr_config.removePeer(data.client_pub_key); 
-				await svr_config.save()
+				await svr_config.save({ noUp: true });
 				await svr_config.up();
 			}
 
