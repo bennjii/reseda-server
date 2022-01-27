@@ -148,6 +148,7 @@ const server = async () => {
 			// Hence - we may need to include a map of available spots and propagate top to bottom (FCFS)
 
 			const client = connections.at(data.client_number);
+			if(!client) return; 
 
 			await supabase
 				.from('data_usage')
@@ -158,9 +159,8 @@ const server = async () => {
 					down: client?.down,
 					server: process.env.SERVER,
 					conn_start: client?.start_time ? new Date(client?.start_time) : new Date(Date.now())
-				}).then(e => console.log(e));	
+				}).then(e => e.error ?? console.log(e.error));	
 
-			
 			if(data.client_pub_key) {
 				await svr_config.down();
 				await svr_config.removePeer(data.client_pub_key); 
@@ -169,8 +169,6 @@ const server = async () => {
 			}
 
 			connections.remove(data.client_number);
-
-			console.log("REMOVING::", data, payload);
 		}).subscribe();
 
 	supabase
@@ -208,6 +206,10 @@ const server = async () => {
 				id: data.author
 			}).then(e => {
 				const data = e.body?.[0];
+
+				// Query current usage statistics - determine current remaining usage, for active disconnect ability (will not execute under pre-release - unlimited data cap leniency).
+				// supabase.from('data_usage').select("up, down, user { max_up, max_down id }, conn_end").
+
 				connections.setMaximum(user_position, data.max_up, data.max_down)
 			});
 			
