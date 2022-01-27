@@ -151,7 +151,7 @@ const server = async () => {
 			await supabase
 				.from('data_usage')
 				.insert({
-					id: data.author,
+					author: data.author,
 					up: client?.up, 
 					down: client?.down,
 					server: process.env.SERVER,
