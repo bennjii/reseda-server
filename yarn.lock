@@ -118,10 +118,10 @@
   "resolved" "https://registry.npmjs.org/@types/lodash/-/lodash-4.14.178.tgz"
   "version" "4.14.178"
 
-"@types/node@*", "@types/node@^17.0.8":
-  "integrity" "sha512-YofkM6fGv4gDJq78g4j0mMuGMkZVxZDgtU0JRdx6FgiJDG+0fY0GKVolOV8WqVmEhLCXkQRjwDdKyPxJp/uucg=="
-  "resolved" "https://registry.npmjs.org/@types/node/-/node-17.0.8.tgz"
-  "version" "17.0.8"
+"@types/node@*", "@types/node@^17.0.12":
+  "integrity" "sha512-4YpbAsnJXWYK/fpTVFlMIcUIho2AYCi4wg5aNPrG1ng7fn/1/RZfCIpRCiBX+12RVa34RluilnvCqD+g3KiSiA=="
+  "resolved" "https://registry.npmjs.org/@types/node/-/node-17.0.12.tgz"
+  "version" "17.0.12"
 
 "@types/responselike@*", "@types/responselike@^1.0.0":
   "integrity" "sha512-85Y2BjiufFzaMIlvJDvTTB8Fxl2xfLo4HgmHzVBz08w4wDePCTjYw66PdrolO0kzli3yam/YCgRufyo1DdQVTA=="
