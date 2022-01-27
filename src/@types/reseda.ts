@@ -18,5 +18,6 @@ export type ResedaUser = {
 	username: string,
 	lcs: string,
 	max_up: number,
-	max_down: number
+	max_down: number,
+    tier: "FREE" | "RESEDA" | "PRO"
 }

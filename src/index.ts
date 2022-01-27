@@ -200,14 +200,31 @@ const server = async () => {
 				// use maximum and known theoretical from ResedaUser to derive the current usage remaining under the [FREE-TIER].
 				// If the user is a paid user, they do not conform to this, and their usage is monitored for payment use only, 
 				// but their maximum becomes 150GB as a reference usage, but is not acted upon - only for statistical analysis (deviation as such).
+				
+				/**
+				 * curl -X POST 'https://xsmomhokxpwacbhotdmk.supabase.co/rest/v1/rpc/get_monthy_usage' \
+				   -d '{ "user_id": "b78e7286-c7ad-4b7d-b427-28f541894fbd" }' \
+				   -H "Content-Type: application/json" \
+				   -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNjQwNTgxMTcyLCJleHAiOjE5NTYxNTcxNzJ9.mJh_6JQJe5lLsE8zv1seOnSMXNtJL4kfV-exQLEi4bM" \
+				   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNjQwNTgxMTcyLCJleHAiOjE5NTYxNTcxNzJ9.mJh_6JQJe5lLsE8zv1seOnSMXNtJL4kfV-exQLEi4bM"
+				 */
 
-				let { data: usage, error } = await supabase
-					.rpc('get_monthy_usage', {
-						user_id: data.id
-					})
+				if(data.tier == "FREE") {
+					let { data: usage, error } = await supabase
+						.rpc('get_monthy_usage', {
+							user_id: data.id
+						})
+				
+					if(usage) {
+						const used_in: number = usage.map(item => item.up).reduce((prev, curr) => prev + curr, 0);
+						const used_out: number = usage.map(item => item.down).reduce((prev, curr) => prev + curr, 0);
 
-				console.log("OUT:", usage, error);
-				connections.setMaximum(user_position, data.max_up, data.max_down)
+						connections.setMaximum(user_position, data.max_up - used_in, data.max_down - used_out)
+					}
+				}else {
+					connections.setMaximum(user_position, data.max_up, data.max_down)
+
+				}
 			});
 			
 			console.log("[CONN]\t> Publishing to SUPABASE");
