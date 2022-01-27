@@ -141,14 +141,14 @@ const server = async () => {
 
 	supabase
 		.from('open_connections')
-		.on('DELETE', (payload) => {
+		.on('DELETE', async (payload) => {
 			const data: Connection = payload.old;
 			// How do we update connections, as the left user may not be the last user,
 			// Hence - we may need to include a map of available spots and propagate top to bottom (FCFS)
 
 			const client = connections.at(data.client_number);
 
-			supabase
+			await supabase
 				.from('data_usage')
 				.insert({
 					id: data.author,
@@ -158,7 +158,10 @@ const server = async () => {
 					conn_start: client?.start_time
 				}).then(e => console.log(e));	
 
+			await svr_config.down()
 			if(data.client_pub_key) svr_config.removePeer(data.client_pub_key);
+			await svr_config.up();
+			
 			connections.remove(data.client_number);
 
 			console.log("REMOVING::", data, payload);
@@ -295,10 +298,11 @@ const updateTransferInfo = () => {
 	console.log(transfers);
 
 	transfers.forEach(transfer => {
-		const [ public_key, up, down ] = transfer.split("    ");
+		const [ public_key, up, down ] = transfer.split("\t");
 		console.log(public_key, up, down);
 
 		if(!public_key || !up || !down) return; 
+
 
 		const client_num = connections.fromId(public_key).client_number;
 
