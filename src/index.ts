@@ -6,6 +6,7 @@ import path from 'path'
 import displayTitle from './title'
 import ip from 'ip';
 import { execSync } from 'child_process'
+import { randomUUID } from 'crypto'
 // import { setInterval, setTimeout } from 'timers/promises'
 
 const envIP = process.env.IP;
@@ -151,6 +152,7 @@ const server = async () => {
 			await supabase
 				.from('data_usage')
 				.insert({
+					id: randomUUID(),
 					author: data.author,
 					up: client?.up, 
 					down: client?.down,
