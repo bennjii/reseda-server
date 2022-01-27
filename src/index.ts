@@ -52,6 +52,13 @@ class SpaceAllocator {
 	at(index: number) {
 		return this.space.get(index);
 	}
+
+	withKey(key: string) {
+		let exists = false;
+
+		this.space.forEach(e => { if(e.client_pub_key == key) exists = true });
+		return exists;
+	}
 }
 
 const connections = new SpaceAllocator();
@@ -121,6 +128,7 @@ const server = async () => {
 		.on('INSERT', (payload) => {
 			const data: Partial<Connection> = payload.new;
 			if(data.server !== process.env.SERVER) return;
+			if(data.client_pub_key && connections.withKey(data.client_pub_key)) return;
 			
 			const user_position = connections.lowestAvailablePosition();
 
@@ -155,7 +163,15 @@ const server = async () => {
 					server_endpoint: ip_a
 				}).match({ id: data.id })
 				.then(async e => {
-					await svr_config.save();
+					console.log("PRE CONFIG SVR_CONF::", svr_config.toString());
+					console.log(connections.at(user_position));
+
+					await svr_config.down().catch(e => console.error(e)).then(e => console.log(e));
+					await svr_config.save({ noUp: true });
+					await svr_config.up().catch(e => console.error(e)).then(e => console.log(e));
+
+					console.log("POST CONFIG SVR_CONF::", svr_config.toString());
+
 				});
 		
 		}).subscribe();
