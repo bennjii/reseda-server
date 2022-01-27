@@ -73,7 +73,7 @@ class SpaceAllocator {
 
 		this.space.forEach(e => { if(e.client_pub_key == key) exists = true });
 		return exists;
-  }
+  	}
 
 	remove(index: number) {
 		return this.space.delete(index);
@@ -158,10 +158,14 @@ const server = async () => {
 					conn_start: client?.start_time
 				}).then(e => console.log(e));	
 
-			await svr_config.down()
-			if(data.client_pub_key) svr_config.removePeer(data.client_pub_key);
-			await svr_config.up();
 			
+			if(data.client_pub_key) {
+				await svr_config.down()
+				await svr_config.removePeer(data.client_pub_key); 
+				await svr_config.save()
+				await svr_config.up();
+			}
+
 			connections.remove(data.client_number);
 
 			console.log("REMOVING::", data, payload);
@@ -295,12 +299,8 @@ const updateTransferInfo = () => {
 	const log = execSync("wg show reseda transfer")
 	const transfers = log.toString().split("\n").filter(e => e !== '');
 
-	console.log(transfers);
-
 	transfers.forEach(transfer => {
 		const [ public_key, up, down ] = transfer.split("\t");
-		console.log(public_key, up, down);
-
 		if(!public_key || !up || !down) return; 
 
 
