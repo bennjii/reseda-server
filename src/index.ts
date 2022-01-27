@@ -212,14 +212,9 @@ const server = async () => {
 					server_endpoint: ip_a
 				}).match({ id: data.id })
 				.then(async e => {
-					console.log("PRE CONFIG SVR_CONF::", svr_config.toString());
-					console.log(connections.at(user_position));
-
 					await svr_config.down().catch(e => console.error(e)).then(e => console.log(e));
 					await svr_config.save({ noUp: true });
 					await svr_config.up().catch(e => console.error(e)).then(e => console.log(e));
-
-					console.log("POST CONFIG SVR_CONF::", svr_config.toString());
 				});
 		}).subscribe();
 
@@ -295,7 +290,9 @@ const verifyIntegrity = async () => {
  */
 const updateTransferInfo = () => {
 	const log = execSync("wg show reseda transfer")
-	const transfers = log.toString().split("\n");
+	const transfers = log.toString().split("\n").filter(e => e !== '');
+
+	console.log(transfers);
 
 	transfers.forEach(transfer => {
 		const [ public_key, up, down ] = transfer.split("    ");
@@ -307,9 +304,12 @@ const updateTransferInfo = () => {
 
 		if(client_num) {
 			const client = connections.at(client_num);
+
 			if(client) {
 				client.up = parseInt(up);
 				client.down = parseInt(down);
+
+				console.log(`${public_key} :: UP: ${client.up} / ${client.max_up} (${client.up / (client?.max_up ?? 1)}%)  DOWN: ${client.down} / ${client.max_down}  (${client.down / (client?.max_down ?? 1)}%)`);
 			}
 		}
 	})
