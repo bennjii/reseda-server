@@ -36,7 +36,7 @@
     "external-ip": "^2.3.1",
     "ip": "^1.1.5",
     "lodash.mergewith": "^4.6.2",
-    "node-fetch": "^3.2.0",
+    "node-fetch": "^2.6.7",
     "public-ip": "^5.0.0",
     "wireguard-tools": "^0.1.0"
   },
