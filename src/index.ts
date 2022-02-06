@@ -8,7 +8,6 @@ import ip from 'ip';
 import { execSync } from 'child_process'
 import { randomUUID } from 'crypto'
 import { Connection, ResedaUser } from './@types/reseda'
-// import { setInterval, setTimeout } from 'timers/promises'
 
 const envIP = process.env.IP;
 if(!process.env.KEY) void(0);
@@ -121,6 +120,22 @@ const server = async () => {
 			flag: process.env.FLAG,
 			hostname: ip_a,
 		});
+
+	// Duplicate Publish to Reseda PlanetScale Server as Well - for cross-compatibility
+	await fetch("https://reseda.app/api/server/register", {
+		method: "POST",
+		body: JSON.stringify({
+			id: process.env.SERVER,
+			location: process.env.TZ,
+			country: process.env.COUNTRY,
+			virtual: process.env.VIRTUAL,
+			flag: process.env.FLAG,
+			hostname: ip_a,
+		}),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
 
     await svr_config.generateKeys(); //{ preSharedKey: true }
 	await svr_config.writeToFile();
