@@ -8,6 +8,7 @@ import ip from 'ip';
 import { execSync } from 'child_process'
 import { randomUUID } from 'crypto'
 import { Connection, ResedaUser } from './@types/reseda'
+import fetch from "node-fetch"
 
 const envIP = process.env.IP;
 if(!process.env.KEY) void(0);
