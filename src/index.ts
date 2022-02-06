@@ -134,9 +134,9 @@ const server = async () => {
 			hostname: ip_a,
 		}),
 		headers: {
-			'Content-Type': 'application/json',
+			'Content-Type': 'text/json',
 		},
-	});
+	}).then((e: any) => console.log(e));
 
     await svr_config.generateKeys(); //{ preSharedKey: true }
 	await svr_config.writeToFile();
