@@ -24,10 +24,15 @@ import { Connection } from "../../@types/reseda"
  * Inputs: none,
  * Returns: none
  */
-const start_websocket_server = () => {
+const start_websocket_server = (origin: string) => {
     const app = express();
     const server = http.createServer(app);
-    const io = new Server(server);
+    const io = new Server(server, {
+        cors: {
+            origin,
+            credentials: true
+        }
+    });
     
     // RESEDA PORT - 6231.
     server.listen(6231, () => {
