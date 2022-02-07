@@ -81,7 +81,7 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         conn();
 
         // Handle Disconnection
-        socket.on('request_disconnect', async ({ cPk }) => {
+        socket.on('request_disconnect', async () => {
             // Extrapolate Information from SessionDB
             const connection = connections.fromRawId(socket.id);
             

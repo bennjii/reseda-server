@@ -24,7 +24,7 @@ const createOnCreateListener = (config: WgConfig, IP: string) => {
 			console.log(`[ALLOC]\t> Allocating INDEX::${user_position}`);
 			connections
 				.fill(user_position, {
-					id: data.id ?? 0,
+					id: data.id ?? "0",
 					author: data.author ?? "",
 					server: data.server ?? process.env.SERVER ?? "error-0",
 					client_pub_key: data.client_pub_key ?? "",
