@@ -6,7 +6,7 @@ type Usage = {
     up: string,
     down: string,
     serverId: string,
-    connStart: string
+    connStart: Date
 }
 const log_usage = async (usage_data: Usage) => {
     const result: any = await prisma.usage.create({

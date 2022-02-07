@@ -33,7 +33,7 @@ const createOnDeleteListener = (config: WgConfig) => {
 				up: client?.up?.toString()! ?? "", 
 				down: client?.down?.toString()! ?? "",
 				serverId: process.env.SERVER! ?? "",
-				connStart: client?.start_time ? new Date(client?.start_time).toString() : new Date(Date.now()).toString()
+				connStart: client?.start_time ? new Date(client?.start_time) : new Date(Date.now())
 			}).then(e => console.log(e.reason))
 
 			if(data.client_pub_key) {
