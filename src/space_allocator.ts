@@ -61,3 +61,5 @@ export default class SpaceAllocator {
 		return client ?? {};
 	}
 }
+
+export const connections = new SpaceAllocator();

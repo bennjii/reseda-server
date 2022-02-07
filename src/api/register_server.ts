@@ -9,7 +9,18 @@ type Server = {
     hostname: string,
 }
 
-const register_server = async (server_data: Server, override: boolean) => {
+const serverData: Server = {
+    id: process.env.SERVER ?? "",
+    location: process.env.TZ ?? "",
+    country: process.env.COUNTRY ?? "",
+    virtual: process.env.VIRTUAL == 'true',
+    flag: process.env.FLAG ?? "",
+    hostname: "",
+}
+
+const register_server = async (server_ip: string, override: boolean) => {
+    const server_data = { ...serverData, hostname: server_ip };
+
     const server_exists = await prisma.server.findFirst({
         where: {
             OR: [
@@ -22,8 +33,6 @@ const register_server = async (server_data: Server, override: boolean) => {
             ]
         }
     });
-
-    console.log("Verifying...", server_exists);
     
     if(!server_exists) {
         console.log("Creating New Server");
