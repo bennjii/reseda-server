@@ -41,17 +41,18 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
     });
 
     io.on('connection', (socket) => {
-        console.log('a user connected');
+        console.log('a user connected', socket.id);
 
-        // Connection created in middleware - now we can just reply!
-        socket.on('request_connect', async ({ cPk }) => {
-            const connection = connections.fromId(cPk);
+        // // Connection created in middleware - now we can just reply!
+        // socket.on('request_connect', async ({ cPk }) => {
 
-            socket.emit("request_accepted", connection);
-            await config.down().catch(e => console.error(e)).then(e => console.log(e));
-            await config.save({ noUp: true });
-            await config.up().catch(e => console.error(e)).then(e => console.log(e));
-        })
+            
+        // });
+
+        // Handle Disconnection
+        socket.on('request_disconnect', async ({ cPk }) => {
+            console.log(socket);
+        });
     });
 
     // Client Connects as so:: var socket = io("http://{server_hostname}:6231/", { auth: connection_data });
@@ -73,7 +74,8 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
 
         connections
             .fill(user_position, {
-                id: partial_connection.id ?? 0,
+                //@ts-expect-error
+                id: socket.id ? socket.id.toString() : "",
                 author: partial_connection.author ?? "",
                 server: partial_connection.server ?? process.env.SERVER ?? "error-0",
                 client_pub_key: partial_connection.client_pub_key ?? "",
@@ -83,6 +85,13 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
                 server_endpoint: origin,
                 start_time: new Date().getTime()
             });
+
+        const connection = connections.fromId(partial_connection.client_pub_key ?? "");
+
+        socket.emit("request_accepted", connection);
+        await config.down().catch(e => console.error(e)).then(e => console.log(e));
+        await config.save({ noUp: true });
+        await config.up().catch(e => console.error(e)).then(e => console.log(e));
 
         return next();
     });
