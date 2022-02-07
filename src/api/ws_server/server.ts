@@ -29,7 +29,7 @@ const start_websocket_server = (origin: string) => {
     const server = http.createServer(app);
     const io = new Server(server, {
         cors: {
-            origin,
+            origin: `http://${origin}`,
             credentials: true
         }
     });
