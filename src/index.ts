@@ -9,74 +9,14 @@ import { execSync } from 'child_process'
 import { randomUUID } from 'crypto'
 import { Connection, ResedaUser } from './@types/reseda'
 const fetch = require('node-fetch');
+import SpaceAllocator from './space_allocator'
+import register_server from './api/register_server'
 
 const envIP = process.env.IP;
 if(!process.env.KEY) void(0);
 
 const supabase = createClient("https://xsmomhokxpwacbhotdmk.supabase.co", process.env.KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MDU4MTE3MiwiZXhwIjoxOTU2MTU3MTcyfQ.nGtdGflJcGTdegPJwg3FkSQJvKz_VGNzmmml2hj6rQg") 
 const filePath = path.join(__dirname, '/configs', './reseda.conf');
-
-class SpaceAllocator {
-	space: Map<number, Partial<Connection>>;
-
-	constructor() {
-		this.space = new Map<number, Connection>();
-	}
-
-	lowestAvailablePosition(smallest_key: number = 2) {
-		let lowest_free_space = smallest_key;
-
-		this.space.forEach((__, key: number) => {
-			if(key == lowest_free_space) lowest_free_space = key+1; 
-		});
-	  
-		return lowest_free_space;
-	}
-
-	setMaximum(index: number, up: number, down: number) {
-		const loc = this.at(index);
-
-		if(loc) {
-			loc.max_up = up; loc.max_down = down;
-			return true;
-		}
-
-		else return false
-	}
-
-	fill(index: number, data: Partial<Connection>) {
-		this.space.set(index, data);
-	}
-
-	totalUsers() {
-		return this.space.size;
-	}
-
-	at(index: number) {
-		return this.space.get(index);
-	}
-
-	withKey(key: string) {
-		let exists = false;
-
-		this.space.forEach(e => { if(e.client_pub_key == key) exists = true });
-		return exists;
-  	}
-
-	remove(index: number) {
-		return this.space.delete(index);
-	}
-
-	fromId(public_key: string): Partial<Connection> {
-		let client;
-
-		this.space.forEach(e => {
-			if(e.client_pub_key == public_key) client = e;
-		});
-
-		return client ?? {};
-	}
-}
 
 const connections = new SpaceAllocator();
 const server = async () => {
@@ -122,24 +62,35 @@ const server = async () => {
 			hostname: ip_a,
 		});
 
-	// Duplicate Publish to Reseda PlanetScale Server as Well - for cross-compatibility
-	const f = await fetch("https://reseda.app/api/server/register", {
-		method: "POST",
-		body: JSON.stringify({
-			id: process.env.SERVER,
-			location: process.env.TZ,
-			country: process.env.COUNTRY,
-			virtual: process.env.VIRTUAL,
-			flag: process.env.FLAG,
-			hostname: ip_a,
-			override: "true" // Whilst in BETA - Server Status is paramount, knowing when a server comes back online and not resuming previous session is important.
-		}),
-		headers: {
-			'Content-Type': 'text/json',
-		},
-	});
+	// // Duplicate Publish to Reseda PlanetScale Server as Well - for cross-compatibility
+	// await fetch("https://reseda.app/api/server/register", {
+	// 	method: "POST",
+	// 	body: JSON.stringify({
+	// 		id: process.env.SERVER,
+	// 		location: process.env.TZ,
+	// 		country: process.env.COUNTRY,
+	// 		virtual: process.env.VIRTUAL,
+	// 		flag: process.env.FLAG,
+	// 		hostname: ip_a,
+	// 		override: "true" // Whilst in BETA - Server Status is paramount, knowing when a server comes back online and not resuming previous session is important.
+	// 	}),
+	// 	headers: {
+	// 		'Content-Type': 'text/json',
+	// 	},
+	// });
 
-	console.log("Fetch", f);
+	console.log("Performing Prisma Registration")
+
+	const registration = await register_server({
+		id: process.env.SERVER! ?? "",
+		location: process.env.TZ! ?? "",
+		country: process.env.COUNTRY! ?? "",
+		virtual: process.env.VIRTUAL == 'true',
+		flag: process.env.FLAG! ?? "",
+		hostname: ip_a,
+	}, false).then(e => { console.log(e); return e; })
+
+	console.log("REGIS", registration);
 
     await svr_config.generateKeys(); //{ preSharedKey: true }
 	await svr_config.writeToFile();
@@ -166,6 +117,21 @@ const server = async () => {
 					server: process.env.SERVER,
 					conn_start: client?.start_time ? new Date(client?.start_time) : new Date(Date.now())
 				}).then(e => e.error ?? console.log(e.error));	
+
+			await fetch("https://reseda.app/api/usage/log", {
+				method: "POST",
+				body: JSON.stringify({
+					id: randomUUID(),
+					author: data.author,
+					up: client?.up, 
+					down: client?.down,
+					server: process.env.SERVER,
+					conn_start: client?.start_time ? new Date(client?.start_time) : new Date(Date.now())
+				}),
+				headers: {
+					'Content-Type': 'text/json',
+				},
+			});
 
 			if(data.client_pub_key) {
 				await svr_config.down();
@@ -356,4 +322,5 @@ const updateTransferInfo = () => {
 	})
 }
 
+console.log("Booting...");
 server();

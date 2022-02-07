@@ -2,7 +2,7 @@ version: '3.7'
 
 services:
   wireguard:
-    image: unrealgdev/reseda-server
+    image: docker.io/unrealgdev/reseda-server 
     container_name: wireguard
     cap_add:
       - NET_ADMIN

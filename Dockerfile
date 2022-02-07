@@ -73,6 +73,7 @@ RUN yarn install
 
 # Copy and build project
 COPY . .
+RUN npx prisma generate
 RUN yarn build
 
 # ports and volumes
