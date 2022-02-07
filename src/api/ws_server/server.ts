@@ -4,6 +4,8 @@ import http from 'http'
 import { Server } from "socket.io"
 import { Connection } from "../../@types/reseda"
 import { WgConfig } from "wireguard-tools"
+import { randomUUID } from "crypto"
+import log_usage from "../log_usage"
 
 // Can listen to incoming traffic and manage connections, pinging delete and create events.
 
@@ -57,7 +59,6 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
 
             connections
                 .fill(user_position, {
-                    //@ts-expect-error
                     id: socket.id ? socket.id.toString() : "",
                     author: partial_connection.author ?? "",
                     server: partial_connection.server ?? process.env.SERVER ?? "error-0",
@@ -81,7 +82,29 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
 
         // Handle Disconnection
         socket.on('request_disconnect', async ({ cPk }) => {
-            console.log(socket);
+            // Extrapolate Information from SessionDB
+            const connection = connections.fromRawId(socket.id);
+            
+            // Prioritize Disconnecting User
+            if(connection.client_pub_key) {
+				await config.down();
+				await config.removePeer(connection.client_pub_key); 
+				await config.save({ noUp: true });
+				await config.up();
+			}
+
+            // Remove Local Instance
+			if(connection.client_number) connections.remove(connection.client_number);
+
+            // Log the Session's Usage
+            await log_usage({
+				id: randomUUID(),
+				userId: connection.author! ?? "",
+				up: connection?.up?.toString()! ?? "", 
+				down: connection?.down?.toString()! ?? "",
+				serverId: process.env.SERVER! ?? "",
+				connStart: connection?.start_time ? new Date(connection?.start_time) : new Date(Date.now())
+			}).then(e => console.log(e.reason))
         });
     });
 

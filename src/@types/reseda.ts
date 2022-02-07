@@ -1,5 +1,5 @@
 export type Connection = {
-	id: number,
+	id: String,
 	author: string,
 	server: string,
 	client_pub_key: string,
