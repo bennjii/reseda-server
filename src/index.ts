@@ -11,6 +11,7 @@ import supabase from './client';
 
 import { quitQuietly, updateTransferInfo, verifyIntegrity } from './helpers';
 import createOnCreateListener from './api/listeners/on_create';
+import start_websocket_server from './api/ws_server/server';
 
 const envIP = process.env.IP;
 if(!process.env.KEY) void(0);
@@ -55,7 +56,7 @@ const server = async () => {
 			hostname: IP,
 		});
 
-	await register_server(IP, true).then(e => console.log(e.reason))
+	await register_server(IP, true).then(e => console.log(e.reason));
 
     await svr_config.generateKeys();
 	await svr_config.writeToFile();
@@ -64,6 +65,9 @@ const server = async () => {
 
 	createOnDeleteListener(svr_config);
 	createOnCreateListener(svr_config, IP);
+
+	// Instantiate SocketIO Server
+	start_websocket_server();
 
 	// This should never execute by code, rather as a result of the following handlers - handles normal exit protocols.
 	process.on("exit", () => { console.log(`Process has exited normally.`) });
