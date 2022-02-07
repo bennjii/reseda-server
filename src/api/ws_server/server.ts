@@ -41,13 +41,43 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
     });
 
     io.on('connection', (socket) => {
-        console.log('a user connected', socket.id);
+        const conn = async () => {
+            const partial_connection: Partial<Connection> = socket.handshake.auth;
+            console.log(partial_connection);
 
-        // // Connection created in middleware - now we can just reply!
-        // socket.on('request_connect', async ({ cPk }) => {
+            if(partial_connection.client_pub_key && connections.withKey(partial_connection.client_pub_key)) return;
+            const user_position = connections.lowestAvailablePosition();
 
-            
-        // });
+            config
+                .addPeer({
+                    publicKey: partial_connection.client_pub_key,
+                    allowedIps: [`192.168.69.${user_position}/24`],
+                    persistentKeepalive: 25
+                });
+
+            connections
+                .fill(user_position, {
+                    //@ts-expect-error
+                    id: socket.id ? socket.id.toString() : "",
+                    author: partial_connection.author ?? "",
+                    server: partial_connection.server ?? process.env.SERVER ?? "error-0",
+                    client_pub_key: partial_connection.client_pub_key ?? "",
+                    svr_pub_key: config.publicKey ?? "",
+                    client_number: user_position,
+                    awaiting: false,
+                    server_endpoint: origin,
+                    start_time: new Date().getTime()
+                });
+
+            const connection = connections.fromId(partial_connection.client_pub_key ?? "");
+
+            socket.emit("request_accepted", connection);
+            await config.down().catch(e => console.error(e)).then(e => console.log(e));
+            await config.save({ noUp: true });
+            await config.up().catch(e => console.error(e)).then(e => console.log(e));
+        }
+
+        conn();
 
         // Handle Disconnection
         socket.on('request_disconnect', async ({ cPk }) => {
@@ -58,41 +88,6 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
     // Client Connects as so:: var socket = io("http://{server_hostname}:6231/", { auth: connection_data });
     io.use(async (socket, next) => {
         console.log("Query: ", socket.handshake.auth);
-
-        const partial_connection: Partial<Connection> = socket.handshake.auth;
-        console.log(partial_connection);
-
-        if(partial_connection.client_pub_key && connections.withKey(partial_connection.client_pub_key)) return;
-        const user_position = connections.lowestAvailablePosition();
-
-        config
-            .addPeer({
-                publicKey: partial_connection.client_pub_key,
-                allowedIps: [`192.168.69.${user_position}/24`],
-                persistentKeepalive: 25
-            });
-
-        connections
-            .fill(user_position, {
-                //@ts-expect-error
-                id: socket.id ? socket.id.toString() : "",
-                author: partial_connection.author ?? "",
-                server: partial_connection.server ?? process.env.SERVER ?? "error-0",
-                client_pub_key: partial_connection.client_pub_key ?? "",
-                svr_pub_key: config.publicKey ?? "",
-                client_number: user_position,
-                awaiting: false,
-                server_endpoint: origin,
-                start_time: new Date().getTime()
-            });
-
-        const connection = connections.fromId(partial_connection.client_pub_key ?? "");
-
-        socket.emit("request_accepted", connection);
-        await config.down().catch(e => console.error(e)).then(e => console.log(e));
-        await config.save({ noUp: true });
-        await config.up().catch(e => console.error(e)).then(e => console.log(e));
-
         return next();
     });
 }
