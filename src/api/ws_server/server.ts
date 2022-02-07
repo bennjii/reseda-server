@@ -3,6 +3,7 @@ import express from "express"
 import http from 'http'
 import { Server } from "socket.io"
 import { Connection } from "../../@types/reseda"
+import { WgConfig } from "wireguard-tools"
 
 // Can listen to incoming traffic and manage connections, pinging delete and create events.
 
@@ -24,7 +25,7 @@ import { Connection } from "../../@types/reseda"
  * Inputs: none,
  * Returns: none
  */
-const start_websocket_server = (origin: string) => {
+const start_websocket_server = (origin: string, config: WgConfig) => {
     const app = express();
     const server = http.createServer(app);
     const io = new Server(server, {
@@ -42,8 +43,14 @@ const start_websocket_server = (origin: string) => {
     io.on('connection', (socket) => {
         console.log('a user connected');
 
-        socket.on('request_connect', () => {
+        // Connection created in middleware - now we can just reply!
+        socket.on('request_connect', async ({ user_id }) => {
+            const connection = connections.fromId(user_id);
 
+            socket.emit("request_accepted", connection);
+            await config.down().catch(e => console.error(e)).then(e => console.log(e));
+            await config.save({ noUp: true });
+            await config.up().catch(e => console.error(e)).then(e => console.log(e));
         })
     });
 
@@ -51,8 +58,31 @@ const start_websocket_server = (origin: string) => {
     io.use(async (socket, next) => {
         console.log("Query: ", socket.handshake.auth);
 
-        const partial_connection: Partial<Connection> = socket.handshake.auth.connection_data;
+        const partial_connection: Partial<Connection> = socket.handshake.auth;
         console.log(partial_connection);
+
+        if(partial_connection.client_pub_key && connections.withKey(partial_connection.client_pub_key)) return;
+        const user_position = connections.lowestAvailablePosition();
+
+        config
+            .addPeer({
+                publicKey: partial_connection.client_pub_key,
+                allowedIps: [`192.168.69.${user_position}/24`],
+                persistentKeepalive: 25
+            });
+
+        connections
+            .fill(user_position, {
+                id: partial_connection.id ?? 0,
+                author: partial_connection.author ?? "",
+                server: partial_connection.server ?? process.env.SERVER ?? "error-0",
+                client_pub_key: partial_connection.client_pub_key ?? "",
+                svr_pub_key: config.publicKey ?? "",
+                client_number: user_position,
+                awaiting: false,
+                server_endpoint: origin,
+                start_time: new Date().getTime()
+            });
 
         return next();
     });

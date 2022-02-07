@@ -67,7 +67,7 @@ const server = async () => {
 	createOnCreateListener(svr_config, IP);
 
 	// Instantiate SocketIO Server
-	start_websocket_server(IP);
+	start_websocket_server(IP, svr_config);
 
 	// This should never execute by code, rather as a result of the following handlers - handles normal exit protocols.
 	process.on("exit", () => { console.log(`Process has exited normally.`) });
