@@ -29,7 +29,7 @@ const start_websocket_server = (origin: string) => {
     const server = http.createServer(app);
     const io = new Server(server, {
         cors: {
-            origin: `http://${origin}`,
+            origin: [`http://${origin}`, 'http://localhost:8888', 'https://reseda.app'],
             credentials: true
         }
     });
