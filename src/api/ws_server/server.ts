@@ -44,8 +44,8 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         console.log('a user connected');
 
         // Connection created in middleware - now we can just reply!
-        socket.on('request_connect', async ({ user_id }) => {
-            const connection = connections.fromId(user_id);
+        socket.on('request_connect', async ({ cPk }) => {
+            const connection = connections.fromId(cPk);
 
             socket.emit("request_accepted", connection);
             await config.down().catch(e => console.error(e)).then(e => console.log(e));
