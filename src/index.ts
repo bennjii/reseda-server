@@ -123,7 +123,7 @@ const server = async () => {
 		});
 
 	// Duplicate Publish to Reseda PlanetScale Server as Well - for cross-compatibility
-	await fetch("https://reseda.app/api/server/register", {
+	const f = await fetch("https://reseda.app/api/server/register", {
 		method: "POST",
 		body: JSON.stringify({
 			id: process.env.SERVER,
@@ -132,11 +132,14 @@ const server = async () => {
 			virtual: process.env.VIRTUAL,
 			flag: process.env.FLAG,
 			hostname: ip_a,
+			override: "true" // Whilst in BETA - Server Status is paramount, knowing when a server comes back online and not resuming previous session is important.
 		}),
 		headers: {
 			'Content-Type': 'text/json',
 		},
-	}).then((e: any) => console.log(e));
+	});
+
+	console.log("Fetch", f);
 
     await svr_config.generateKeys(); //{ preSharedKey: true }
 	await svr_config.writeToFile();
