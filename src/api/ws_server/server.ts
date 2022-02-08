@@ -1,7 +1,7 @@
 import { connections } from "../../space_allocator"
 import express from "express"
 import http from 'http'
-import { Server } from "socket.io"
+import { Server, Socket } from "socket.io"
 import { Connection } from "../../@types/reseda"
 import { WgConfig } from "wireguard-tools"
 import { randomUUID } from "crypto"
@@ -44,93 +44,103 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
     });
 
     io.on('connection', (socket) => {
-        const conn = async () => {
-            const partial_connection: Partial<Connection> = socket.handshake.auth;
-            console.log(partial_connection);
-
-            if(partial_connection.client_pub_key && connections.withKey(partial_connection.client_pub_key)) return;
-            const user_position = connections.lowestAvailablePosition();
-
-            config
-                .addPeer({
-                    publicKey: partial_connection.client_pub_key,
-                    allowedIps: [`192.168.69.${user_position}/24`],
-                    persistentKeepalive: 25
-                });
-
-            connections
-                .fill(user_position, {
-                    id: socket.id ? socket.id.toString() : "",
-                    author: partial_connection.author ?? "",
-                    server: partial_connection.server ?? process.env.SERVER ?? "error-0",
-                    client_pub_key: partial_connection.client_pub_key ?? "",
-                    svr_pub_key: config.publicKey ?? "",
-                    client_number: user_position,
-                    awaiting: false,
-                    server_endpoint: origin,
-                    start_time: new Date().getTime()
-                });
-
-            const connection = connections.fromId(partial_connection.client_pub_key ?? "");
-
-            socket.emit("request_accepted", connection);
-            await config.down().catch(e => console.error(e)).then(e => console.log(e));
-            await config.save({ noUp: true });
-            await config.up().catch(e => console.error(e)).then(e => console.log(e));
+        switch(socket.handshake.auth.type) {
+            case "initial":
+                conn(socket, config);
+                break;
+            case "disconnect":
+                disconn(socket, config);
+                break;
+            case "secondary":
+                console.log("Entering Pickoff Connection...");
+                break;
+            default:
+                break;
         }
-
-        if(socket.handshake.auth.type == "initial") conn();
-        else {
-            console.log("Entering Pickoff Connection...")
-        }
-
-        // Handle Disconnection
-        socket.on('request_disconnect', async () => {
-            console.time("disconnectClient");
-
-            // Extrapolate Information from SessionDB
-            const connection = connections.fromRawId(socket.id);
-
-            // User disconnected, now its our job to remove them from the server and wireguard pool.
-            console.log(`Received Disconnect Message from ${connection.author}`);
-            console.timeLog("disconnectClient");
-            
-            // Prioritize Disconnecting User
-            if(connection.client_pub_key) {
-				await config.down();
-				await config.removePeer(connection.client_pub_key); 
-				await config.save({ noUp: true });
-				await config.up();
-			}
-
-            console.log("Removed Peer");
-            console.timeLog("disconnectClient");
-
-            // Remove Local Instance
-			if(connection.client_number) connections.remove(connection.client_number);
-
-            console.log("Peer Cleaned");
-            console.timeLog("disconnectClient");
-
-            // Log the Session's Usage
-            await log_usage({
-				id: randomUUID(),
-				userId: connection.author! ?? "",
-				up: connection?.up?.toString()! ?? "", 
-				down: connection?.down?.toString()! ?? "",
-				serverId: process.env.SERVER! ?? "",
-				connStart: connection?.start_time ? new Date(connection?.start_time) : new Date(Date.now())
-			}).then(e => console.log(e.reason));
-
-            console.log("Usage Report Created.");
-            console.timeEnd("disconnectClient");
-        });
+        
+        socket.emit("update_schema")
     });
 
     // Client Connects as so:: var socket = io("http://{server_hostname}:6231/", { auth: connection_data });
     io.use(async (socket, next) => {
         return next();
     });
+}
+
+const conn = async (socket: Socket, config: WgConfig) => {
+    const partial_connection: Partial<Connection> = socket.handshake.auth;
+    console.log(partial_connection);
+
+    if(partial_connection.client_pub_key && connections.withKey(partial_connection.client_pub_key)) return;
+    const user_position = connections.lowestAvailablePosition();
+
+    config
+        .addPeer({
+            publicKey: partial_connection.client_pub_key,
+            allowedIps: [`192.168.69.${user_position}/24`],
+            persistentKeepalive: 25
+        });
+
+    connections
+        .fill(user_position, {
+            id: socket.id ? socket.id.toString() : "",
+            author: partial_connection.author ?? "",
+            server: partial_connection.server ?? process.env.SERVER ?? "error-0",
+            client_pub_key: partial_connection.client_pub_key ?? "",
+            svr_pub_key: config.publicKey ?? "",
+            client_number: user_position,
+            awaiting: false,
+            server_endpoint: origin,
+            start_time: new Date().getTime()
+        });
+
+    const connection = connections.fromId(partial_connection.client_pub_key ?? "");
+
+    socket.emit("request_accepted", connection);
+    await config.down().catch(e => console.error(e)).then(e => console.log(e));
+    await config.save({ noUp: true });
+    await config.up().catch(e => console.error(e)).then(e => console.log(e));
+}
+
+const disconn = async (socket: Socket, config: WgConfig) => {
+    console.time("disconnectClient");
+
+    // Extrapolate Information from SessionDB
+    const connection = connections.fromRawId(socket.id);
+
+    // User disconnected, now its our job to remove them from the server and wireguard pool.
+    console.log(`Received Disconnect Message from ${connection.author}`);
+    console.timeLog("disconnectClient");
+    
+    // Prioritize Disconnecting User
+    if(connection.client_pub_key) {
+        await config.down();
+        await config.removePeer(connection.client_pub_key); 
+        await config.save({ noUp: true });
+        await config.up();
+    }
+
+    console.log("Removed Peer");
+    console.timeLog("disconnectClient");
+
+    // Remove Local Instance
+    if(connection.client_number) connections.remove(connection.client_number);
+
+    console.log("Peer Cleaned");
+    console.timeLog("disconnectClient");
+
+    // Log the Session's Usage
+    await log_usage({
+        id: randomUUID(),
+        userId: connection.author! ?? "",
+        up: connection?.up?.toString()! ?? "", 
+        down: connection?.down?.toString()! ?? "",
+        serverId: process.env.SERVER! ?? "",
+        connStart: connection?.start_time ? new Date(connection?.start_time) : new Date(Date.now())
+    }).then(e => console.log(e.reason));
+
+    console.log("Usage Report Created.");
+    console.timeEnd("disconnectClient");
 }
 
 export default start_websocket_server;
