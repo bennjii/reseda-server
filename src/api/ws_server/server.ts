@@ -33,7 +33,8 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
     const io = new Server(server, {
         cors: {
             origin: [`http://${origin}`, 'http://localhost:8888', 'https://reseda.app'],
-            credentials: true
+            credentials: true,
+            allowedHeaders: ['Access-Control-Allow-Origin']
         }
     });
     
@@ -78,7 +79,10 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
             await config.up().catch(e => console.error(e)).then(e => console.log(e));
         }
 
-        conn();
+        if(socket.handshake.auth.type == "initial") conn();
+        else {
+            console.log("Entering Pickoff Connection...")
+        }
 
         // Handle Disconnection
         socket.on('request_disconnect', async () => {
