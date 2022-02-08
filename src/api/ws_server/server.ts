@@ -43,13 +43,13 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         console.log('Websocket Server Listening on [6231]');
     });
 
-    io.on('connection', (socket) => {
+    io.on('connection', async (socket) => {
         switch(socket.handshake.auth.type) {
             case "initial":
-                conn(socket, config);
+                await conn(socket, config);
                 break;
             case "disconnect":
-                disconn(socket, config);
+                await disconn(socket, config);
                 break;
             case "secondary":
                 console.log("Entering Pickoff Connection...");
@@ -57,8 +57,8 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
             default:
                 break;
         }
-        
-        socket.emit("update_schema")
+
+        // socket.emit("update_schema")
     });
 
     // Client Connects as so:: var socket = io("http://{server_hostname}:6231/", { auth: connection_data });
@@ -74,12 +74,16 @@ const conn = async (socket: Socket, config: WgConfig) => {
     if(partial_connection.client_pub_key && connections.withKey(partial_connection.client_pub_key)) return;
     const user_position = connections.lowestAvailablePosition();
 
+    console.log(`Adding Peer`)
+
     config
         .addPeer({
             publicKey: partial_connection.client_pub_key,
             allowedIps: [`192.168.69.${user_position}/24`],
             persistentKeepalive: 25
         });
+
+    console.log(`Filing Connection DB`)
 
     connections
         .fill(user_position, {
@@ -95,6 +99,8 @@ const conn = async (socket: Socket, config: WgConfig) => {
         });
 
     const connection = connections.fromId(partial_connection.client_pub_key ?? "");
+
+    console.log(`Receptance Achieved`);
 
     socket.emit("request_accepted", connection);
     await config.down().catch(e => console.error(e)).then(e => console.log(e));
