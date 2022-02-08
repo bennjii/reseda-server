@@ -43,8 +43,8 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         console.log('Websocket Server Listening on [6231]');
     });
 
-    io.on('connection', (socket) => {
-        const conn = async () => {
+    io.on('connection', async (socket) => {
+        if(socket.handshake.auth.type == "initial") {
             const partial_connection: Partial<Connection> = socket.handshake.auth;
             console.log(partial_connection);
 
@@ -77,17 +77,10 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
             await config.down().catch(e => console.error(e)).then(e => console.log(e));
             await config.save({ noUp: true });
             await config.up().catch(e => console.error(e)).then(e => console.log(e));
-        }
-
-        if(socket.handshake.auth.type == "initial") conn();
-        else if(socket.handshake.auth.type == "secondary") {
+        }else if(socket.handshake.auth.type == "secondary") {
             console.log("Entering Pickoff Connection...");
         }else {
             console.log("Entering Disconnect Phase")
-        }
-
-        // Handle Disconnection
-        socket.on('request_disconnect', async () => {
             console.time("disconnectClient");
 
             // Extrapolate Information from SessionDB
@@ -126,7 +119,7 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
 
             console.log("Usage Report Created.");
             console.timeEnd("disconnectClient");
-        });
+        }
     });
 
     // Client Connects as so:: var socket = io("http://{server_hostname}:6231/", { auth: connection_data });
