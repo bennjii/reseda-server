@@ -86,7 +86,7 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
             console.log(socket.handshake.auth);
 
             // Extrapolate Information from SessionDB
-            const connection = connections.fromId(socket.handshake.auth.author);
+            const connection = connections.fromRawId(socket.handshake.auth.author);
 
             // User disconnected, now its our job to remove them from the server and wireguard pool.
             console.log(`Received Disconnect Message from ${connection.author}`);
