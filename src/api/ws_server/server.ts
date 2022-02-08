@@ -60,7 +60,7 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
 
             connections
                 .fill(user_position, {
-                    id: socket.id ? socket.id.toString() : "",
+                    id: partial_connection.author ?? "",
                     author: partial_connection.author ?? "",
                     server: partial_connection.server ?? process.env.SERVER ?? "error-0",
                     client_pub_key: partial_connection.client_pub_key ?? "",
@@ -86,7 +86,7 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
             console.log(socket.handshake.auth);
 
             // Extrapolate Information from SessionDB
-            const connection = connections.fromId(socket.handshake.auth.client_pub_key);
+            const connection = connections.fromId(socket.handshake.auth.author);
 
             // User disconnected, now its our job to remove them from the server and wireguard pool.
             console.log(`Received Disconnect Message from ${connection.author}`);
