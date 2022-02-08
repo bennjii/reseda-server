@@ -82,8 +82,14 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
 
         // Handle Disconnection
         socket.on('request_disconnect', async () => {
+            console.time("disconnectClient");
+
             // Extrapolate Information from SessionDB
             const connection = connections.fromRawId(socket.id);
+
+            // User disconnected, now its our job to remove them from the server and wireguard pool.
+            console.log(`Received Disconnect Message from ${connection.author}`);
+            console.timeLog("disconnectClient");
             
             // Prioritize Disconnecting User
             if(connection.client_pub_key) {
@@ -93,8 +99,14 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
 				await config.up();
 			}
 
+            console.log("Removed Peer");
+            console.timeLog("disconnectClient");
+
             // Remove Local Instance
 			if(connection.client_number) connections.remove(connection.client_number);
+
+            console.log("Peer Cleaned");
+            console.timeLog("disconnectClient");
 
             // Log the Session's Usage
             await log_usage({
@@ -104,13 +116,15 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
 				down: connection?.down?.toString()! ?? "",
 				serverId: process.env.SERVER! ?? "",
 				connStart: connection?.start_time ? new Date(connection?.start_time) : new Date(Date.now())
-			}).then(e => console.log(e.reason))
+			}).then(e => console.log(e.reason));
+
+            console.log("Usage Report Created.");
+            console.timeEnd("disconnectClient");
         });
     });
 
     // Client Connects as so:: var socket = io("http://{server_hostname}:6231/", { auth: connection_data });
     io.use(async (socket, next) => {
-        console.log("Query: ", socket.handshake.auth);
         return next();
     });
 }
