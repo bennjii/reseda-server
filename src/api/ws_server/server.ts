@@ -83,6 +83,8 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
             console.log("Entering Disconnect Phase")
             console.time("disconnectClient");
 
+            console.log(socket.handshake.auth);
+
             // Extrapolate Information from SessionDB
             const connection = connections.fromId(socket.handshake.auth.client_pub_key);
 
@@ -91,6 +93,7 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
             console.timeLog("disconnectClient");
             
             // Prioritize Disconnecting User
+            console.log(connection);
             if(connection.client_pub_key) {
 				await config.down();
 				await config.removePeer(connection.client_pub_key); 
