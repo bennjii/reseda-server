@@ -7,6 +7,12 @@ import { WgConfig } from "wireguard-tools"
 import { randomUUID } from "crypto"
 import log_usage from "../log_usage"
 
+type RequestPacket = {
+    server: string,
+    client_pub_key: string,
+    author: string
+}
+
 // Can listen to incoming traffic and manage connections, pinging delete and create events.
 
 /**
@@ -29,6 +35,9 @@ import log_usage from "../log_usage"
  */
 const start_websocket_server = (origin: string, config: WgConfig) => {
     const app = express();
+    app.use(express.json()) // for parsing application/json
+    app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
+
     const server = http.createServer(app);
     const io = new Server(server, {
         cors: {
@@ -38,13 +47,39 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         }
     });
 
-    app.get("/connect", (req, res) => {
-        const body = req.body;
-        console.log(body);
-        
-        res.status(200).json({
-            "req": "TRYING TO CONNECT?"
-        });
+    app.post("/connect", async (req, res) => {
+        const partial_connection: RequestPacket = req.body;
+        console.log(partial_connection);
+
+        if(partial_connection.client_pub_key && connections.withKey(partial_connection.client_pub_key)) return;
+        const user_position = connections.lowestAvailablePosition();
+
+        config
+            .addPeer({
+                publicKey: partial_connection.client_pub_key,
+                allowedIps: [`192.168.69.${user_position}/24`],
+                persistentKeepalive: 25
+            });
+
+        connections
+            .fill(user_position, {
+                id: partial_connection.author ?? "",
+                author: partial_connection.author ?? "",
+                server: partial_connection.server ?? process.env.SERVER ?? "error-0",
+                client_pub_key: partial_connection.client_pub_key ?? "",
+                svr_pub_key: config.publicKey ?? "",
+                client_number: user_position,
+                awaiting: false,
+                server_endpoint: origin,
+                start_time: new Date().getTime()
+            });
+
+        const connection = connections.fromId(partial_connection.client_pub_key ?? "");
+        res.status(200).json(connection);
+
+        await config.down().catch(e => console.error(e)).then(e => console.log(e));
+        await config.save({ noUp: true });
+        await config.up().catch(e => console.error(e)).then(e => console.log(e));
     });
 
     app.post("/disconnect", (req, res) => {
