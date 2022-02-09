@@ -41,11 +41,19 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
     app.get("/connect", (req, res) => {
         const body = req.body;
         console.log(body);
+        
+        res.status(200).json({
+            "req": "TRYING TO CONNECT?"
+        });
     });
 
     app.post("/disconnect", (req, res) => {
         const body = req.body;
         console.log(body);
+
+        res.status(200).json({
+            "req": "TRYING TO DISCONNECT?"
+        });
     })
     
     // RESEDA PORT - 6231.
