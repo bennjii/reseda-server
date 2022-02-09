@@ -6,6 +6,7 @@ import { Connection } from "../../@types/reseda"
 import { WgConfig } from "wireguard-tools"
 import { randomUUID } from "crypto"
 import log_usage from "../log_usage"
+import cors from "cors"
 
 type RequestPacket = {
     server: string,
@@ -37,6 +38,10 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
     const app = express();
     app.use(express.json()) // for parsing application/json
     app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
+
+    app.use(cors({
+        origin: '*'
+    }));
 
     const server = http.createServer(app);
     const io = new Server(server, {
