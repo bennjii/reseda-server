@@ -81,6 +81,10 @@ EXPOSE 51820/udp
 EXPOSE 3000/tcp
 EXPOSE 8000/tcp
 EXPOSE 8443/tcp
+# Socket Server
 EXPOSE 6231
+# HTTP Server
+EXPOSE 80
+EXPOSE 443
 
 CMD ["sudo", "yarn", "serve"]

@@ -27,6 +27,9 @@ services:
       - 8443:8443/tcp
       # ResedaRealtime
       - 6231:6231
+      # ResedaHTTP
+      - 80:80
+      - 443:443
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
     restart: unless-stopped
