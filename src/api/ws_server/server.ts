@@ -110,6 +110,9 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
             console.log("Peer Cleaned");
             console.timeLog("disconnectClient");
 
+            // Let user know that its okay to pull plug now. 
+            socket.emit("OK");
+
             // Log the Session's Usage
             await log_usage({
 				id: randomUUID(),
