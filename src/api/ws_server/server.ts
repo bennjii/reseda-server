@@ -37,12 +37,22 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
             allowedHeaders: ['Access-Control-Allow-Origin']
         }
     });
+
+    app.get("/connect", (req, res) => {
+        const body = req.body;
+        console.log(body);
+    });
+
+    app.post("/disconnect", (req, res) => {
+        const body = req.body;
+        console.log(body);
+    })
     
     // RESEDA PORT - 6231.
     server.listen(6231, () => {
         console.log('Websocket Server Listening on [6231]');
     });
-
+    
     io.on('connection', async (socket) => {
         if(socket.handshake.auth.type == "initial") {
             const partial_connection: Partial<Connection> = socket.handshake.auth;
