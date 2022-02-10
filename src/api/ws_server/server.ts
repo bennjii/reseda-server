@@ -44,6 +44,12 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
     }));
 
     const server = http.createServer(app);
+    const server2 = http.createServer(app);
+
+    server.listen(443, () => {
+        console.log('HTTP Server Listening on [443]');
+    });
+    
     const io = new Server(server, {
         cors: {
             origin: [`http://${origin}`, 'http://localhost:8888', 'https://reseda.app'],
