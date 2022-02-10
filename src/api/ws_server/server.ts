@@ -46,7 +46,7 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
     const server = http.createServer(app);
     const server2 = http.createServer(app);
 
-    server.listen(443, () => {
+    server2.listen(443, () => {
         console.log('HTTP Server Listening on [443]');
     });
     
