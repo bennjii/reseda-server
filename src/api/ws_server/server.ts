@@ -1,12 +1,14 @@
 import { connections } from "../../space_allocator"
 import express from "express"
 import http from 'http'
+import https from 'https'
 import { Server } from "socket.io"
 import { Connection } from "../../@types/reseda"
 import { WgConfig } from "wireguard-tools"
 import { randomUUID } from "crypto"
 import log_usage from "../log_usage"
 import cors from "cors"
+import fs from "fs"
 
 type RequestPacket = {
     server: string,
@@ -36,6 +38,10 @@ type RequestPacket = {
  */
 const start_websocket_server = (origin: string, config: WgConfig) => {
     const app = express();
+
+    const key = fs.readFileSync('./key.pem');
+    const cert = fs.readFileSync('./cert.pem');
+
     app.use(express.json()) // for parsing application/json
     app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
 
@@ -44,10 +50,14 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
     }));
 
     const server = http.createServer(app);
-    const server2 = http.createServer(app);
 
-    server2.listen(443, () => {
-        console.log('HTTP Server Listening on [443]');
+    // Use Certification
+    const server_https = https.createServer({   
+        key, cert
+    }, app);
+
+    server_https.listen(443, () => {
+        console.log('HTTP(S) Server Listening on [443]');
     });
     
     const io = new Server(server, {
@@ -93,13 +103,56 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         await config.up().catch(e => console.error(e)).then(e => console.log(e));
     });
 
-    app.post("/disconnect", (req, res) => {
-        const body = req.body;
-        console.log(body);
+    app.post("/disconnect", async (req, res) => {
+        console.log("Entering Disconnect Phase")
+        console.time("disconnectClient");
 
-        res.status(200).json({
-            "req": "TRYING TO DISCONNECT?"
-        });
+        const partial_connection: RequestPacket = req.body;
+
+        // Extrapolate Information from SessionDB
+        const connection = connections.fromRawId(partial_connection.author);
+
+        // User disconnected, now its our job to remove them from the server and wireguard pool.
+        console.log(`Received Disconnect Message from ${connection.author}`);
+        console.timeLog("disconnectClient");
+        
+        // Prioritize Disconnecting User
+        console.log(connection);
+        if(connection.client_pub_key) {
+            await config.down();
+            await config.removePeer(connection.client_pub_key); 
+            await config.save({ noUp: true });
+            await config.up();
+        }
+
+        console.log("Removed Peer");
+        console.timeLog("disconnectClient");
+
+        // Remove Local Instance
+        if(connection.client_number) connections.remove(connection.client_number);
+
+        console.log("Peer Cleaned");
+        console.timeLog("disconnectClient");
+
+        // Let user know that its okay to pull plug now. 
+        res.status(200).json(connection);
+
+        // Log the Session's Usage
+        await log_usage({
+            id: randomUUID(),
+            userId: connection.author! ?? "",
+            up: connection?.up?.toString()! ?? "", 
+            down: connection?.down?.toString()! ?? "",
+            serverId: process.env.SERVER! ?? "",
+            connStart: connection?.start_time ? new Date(connection?.start_time) : new Date(Date.now())
+        }).then(e => console.log(e.reason));
+
+        console.log("Usage Report Created.");
+        console.timeEnd("disconnectClient");
+    });
+
+    app.get("/", (req, res) => {
+        res.status(200).json({ status: "OK" });
     })
     
     // RESEDA PORT - 6231.

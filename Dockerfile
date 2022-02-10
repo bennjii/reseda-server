@@ -66,6 +66,8 @@ RUN sudo apt-get install -y nodejs
 # Install Yarn
 RUN npm install -g yarn
 
+RUN npm config set strict-ssl false
+
 # Copy Packages Over
 COPY package.json .
 COPY yarn.lock .
