@@ -39,8 +39,8 @@ type RequestPacket = {
 const start_websocket_server = (origin: string, config: WgConfig) => {
     const app = express();
 
-    const key = fs.readFileSync('./key.pem');
-    const cert = fs.readFileSync('./cert.pem');
+    // const key = fs.readFileSync('./key.pem');
+    // const cert = fs.readFileSync('./cert.pem');
 
     app.use(express.json()) // for parsing application/json
     app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
@@ -50,19 +50,10 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
     }));
 
     const server = http.createServer(app);
-
-    // Use Certification
-    const server_https = https.createServer({   
-        key, cert
-    }, app);
-
-    server_https.listen(443, () => {
-        console.log('HTTP(S) Server Listening on [443]');
-    });
     
     const io = new Server(server, {
         cors: {
-            origin: [`http://${origin}`, 'http://localhost:8888', 'https://reseda.app'],
+            origin: [`http://${origin}`, 'http://localhost:3000', 'https://reseda.app'],
             credentials: true,
             allowedHeaders: ['Access-Control-Allow-Origin']
         }
@@ -195,7 +186,7 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
             await config.save({ noUp: true });
             await config.up().catch(e => console.error(e)).then(e => console.log(e));
         }else if(socket.handshake.auth.type == "secondary") {
-            console.log("Entering Pickoff Connection...");
+            console.log("Entering Pick off Connection...");
         }else {
             console.log("Entering Disconnect Phase")
             console.time("disconnectClient");
