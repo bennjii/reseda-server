@@ -53,7 +53,7 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
     
     const io = new Server(server, {
         cors: {
-            origin: [`http://${origin}`, 'http://localhost:3000', 'https://reseda.app'],
+            origin: true, //[`http://${origin}`, 'http://localhost:3000', 'https://reseda.app'],
             credentials: true,
             allowedHeaders: ['Access-Control-Allow-Origin']
         }
