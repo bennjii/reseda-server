@@ -187,6 +187,13 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
             await config.up().catch(e => console.error(e)).then(e => console.log(e));
         }else if(socket.handshake.auth.type == "secondary") {
             console.log("Entering Pick off Connection...");
+
+            const partial_connection: Partial<Connection> = socket.handshake.auth;
+            const connection = connections.fromId(partial_connection.client_pub_key ?? "");
+
+            socket.emit("request_response", {
+                connection
+            });
         }else {
             console.log("Entering Disconnect Phase")
             console.time("disconnectClient");
