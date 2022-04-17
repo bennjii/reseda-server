@@ -7,7 +7,6 @@ import ip from 'ip';
 
 import register_server from './api/register_server'
 import createOnDeleteListener from './api/listeners/on_delete'
-import supabase from './client';
 
 import { quitQuietly, updateTransferInfo, verifyIntegrity } from './helpers';
 import createOnCreateListener from './api/listeners/on_create';
@@ -43,18 +42,6 @@ const server = async () => {
 	displayTitle();
 
 	console.log(`[DATA]\t> Registering ${process.env.SERVER} (@ ${IP})`);
-
-	// Register Server
-	await supabase
-		.from('server_registry')
-		.insert({
-			id: process.env.SERVER,
-			location: process.env.TZ,
-			country: process.env.COUNTRY,
-			virtual: process.env.VIRTUAL,
-			flag: process.env.FLAG,
-			hostname: IP,
-		});
 
 	await register_server(IP, true).then(e => console.log(e.reason));
 

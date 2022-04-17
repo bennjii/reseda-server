@@ -81,7 +81,6 @@ RUN yarn build
 # ports and volumes
 EXPOSE 51820/udp
 EXPOSE 3000/tcp
-EXPOSE 8000/tcp
 EXPOSE 8443/tcp
 # Socket Server
 EXPOSE 6231

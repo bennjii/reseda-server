@@ -21,14 +21,14 @@ export const quitQuietly = async (type: "forced" | "err", config: WgConfig) => {
 	await config.down();
 
 	// Remove the server from the registry as it will no longer
-	supabase
-        .from("server_registry")
-		.delete()
-		.match({
-			id: process.env.SERVER
-		}).then(e => {
-			process.exit(0);
-		})
+	// supabase
+    //     .from("server_registry")
+	// 	.delete()
+	// 	.match({
+	// 		id: process.env.SERVER
+	// 	}).then(e => {
+	// 		process.exit(0);
+	// 	})
 }
 
 /**

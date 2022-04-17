@@ -23,7 +23,6 @@ services:
       # Supabase-Studio
       - 3000:3000/tcp
       # Supabase-Kong
-      - 8000:8000/tcp
       - 8443:8443/tcp
       # ResedaRealtime
       - 6231:6231
