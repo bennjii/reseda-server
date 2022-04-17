@@ -44,7 +44,7 @@ All set!
 ## Applying Updates
 
 All you need to do is run 3 commands:
-   1. `git pull`
+   1. `git pull origin/master`
    2. `docker build . -t unrealgdev/reseda-server`
    3. `docker-compose up -d`
 
