@@ -2,13 +2,14 @@ import { connections } from "../../space_allocator"
 import express from "express"
 import http from 'http'
 import https from 'https'
-import { Server } from "socket.io"
+import { Server, Socket } from "socket.io"
 import { Connection } from "../../@types/reseda"
 import { WgConfig } from "wireguard-tools"
 import { randomUUID } from "crypto"
 import log_usage from "../log_usage"
 import cors from "cors"
 import fs from "fs"
+import { disconnect } from "process"
 
 type RequestPacket = {
     server: string,
@@ -59,11 +60,46 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         }
     });
 
-    app.post("/connect", async (req, res) => {
-        const partial_connection: RequestPacket = req.body;
+    app.get("/", (req, res) => {
+        res.status(200).json({ 
+            status: "OK",
+            load: connections.totalUsers()
+        });
+    })
+    
+    // RESEDA PORT - 6231.
+    server.listen(6231, () => {
+        console.log('Websocket Server Listening on [6231]');
+    });
+    
+    io.on('connection', async (socket) => {
+        if(socket.handshake.auth.type == "initial") {
+            initial_connection(socket);
+        }else if(socket.handshake.auth.type == "secondary") {
+            resume_connection(socket);
+        }else {
+            user_disconnect(socket);
+        }
+    });
+
+    // Client Connects as so:: var socket = io("http://{server_hostname}:6231/", { auth: connection_data });
+    io.use(async (socket, next) => {
+        return next();
+    });
+
+    const initial_connection = async (socket: Socket) => {
+        const partial_connection: Partial<Connection> = socket.handshake.auth;
         console.log(partial_connection);
 
-        if(partial_connection.client_pub_key && connections.withKey(partial_connection.client_pub_key)) return;
+        if(partial_connection.client_pub_key && connections.withKey(partial_connection.client_pub_key)) {
+            // There exists an existing connection to this server with the SAME public key (likely same user, twice)...
+            // Hence, we will need to disconnect the old user to connect the new one, otherwise they will no longer
+            // be able to connect if they fail a disconnect or encounter a bug. This adds repeatability to the service
+            // and prevents unknown disconnects.
+            user_disconnect(socket);
+            return;
+        };
+
         const user_position = connections.lowestAvailablePosition();
 
         config
@@ -87,21 +123,32 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
             });
 
         const connection = connections.fromId(partial_connection.client_pub_key ?? "");
-        res.status(200).json(connection);
 
+        socket.emit("request_accepted", connection);
         await config.down().catch(e => console.error(e)).then(e => console.log(e));
         await config.save({ noUp: true });
         await config.up().catch(e => console.error(e)).then(e => console.log(e));
-    });
+    }
 
-    app.post("/disconnect", async (req, res) => {
+    const resume_connection = async (socket: Socket) => {
+        console.log("Entering Pick off Connection...");
+
+        const partial_connection: Partial<Connection> = socket.handshake.auth;
+        const connection = connections.fromId(partial_connection.client_pub_key ?? "");
+
+        socket.emit("request_response", {
+            connection
+        });
+    }
+
+    const user_disconnect = async (socket: Socket) => {
         console.log("Entering Disconnect Phase")
         console.time("disconnectClient");
 
-        const partial_connection: RequestPacket = req.body;
+        console.log(socket.handshake.auth);
 
         // Extrapolate Information from SessionDB
-        const connection = connections.fromRawId(partial_connection.author);
+        const connection = connections.fromRawId(socket.handshake.auth.author);
 
         // User disconnected, now its our job to remove them from the server and wireguard pool.
         console.log(`Received Disconnect Message from ${connection.author}`);
@@ -126,7 +173,7 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         console.timeLog("disconnectClient");
 
         // Let user know that its okay to pull plug now. 
-        res.status(200).json(connection);
+        socket.emit("OK");
 
         // Log the Session's Usage
         await log_usage({
@@ -140,113 +187,7 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
 
         console.log("Usage Report Created.");
         console.timeEnd("disconnectClient");
-    });
-
-    app.get("/", (req, res) => {
-        res.status(200).json({ status: "OK" });
-    })
-    
-    // RESEDA PORT - 6231.
-    server.listen(6231, () => {
-        console.log('Websocket Server Listening on [6231]');
-    });
-    
-    io.on('connection', async (socket) => {
-        if(socket.handshake.auth.type == "initial") {
-            const partial_connection: Partial<Connection> = socket.handshake.auth;
-            console.log(partial_connection);
-
-            if(partial_connection.client_pub_key && connections.withKey(partial_connection.client_pub_key)) return;
-            const user_position = connections.lowestAvailablePosition();
-
-            config
-                .addPeer({
-                    publicKey: partial_connection.client_pub_key,
-                    allowedIps: [`192.168.69.${user_position}/24`],
-                    persistentKeepalive: 25
-                });
-
-            connections
-                .fill(user_position, {
-                    id: partial_connection.author ?? "",
-                    author: partial_connection.author ?? "",
-                    server: partial_connection.server ?? process.env.SERVER ?? "error-0",
-                    client_pub_key: partial_connection.client_pub_key ?? "",
-                    svr_pub_key: config.publicKey ?? "",
-                    client_number: user_position,
-                    awaiting: false,
-                    server_endpoint: origin,
-                    start_time: new Date().getTime()
-                });
-
-            const connection = connections.fromId(partial_connection.client_pub_key ?? "");
-
-            socket.emit("request_accepted", connection);
-            await config.down().catch(e => console.error(e)).then(e => console.log(e));
-            await config.save({ noUp: true });
-            await config.up().catch(e => console.error(e)).then(e => console.log(e));
-        }else if(socket.handshake.auth.type == "secondary") {
-            console.log("Entering Pick off Connection...");
-
-            const partial_connection: Partial<Connection> = socket.handshake.auth;
-            const connection = connections.fromId(partial_connection.client_pub_key ?? "");
-
-            socket.emit("request_response", {
-                connection
-            });
-        }else {
-            console.log("Entering Disconnect Phase")
-            console.time("disconnectClient");
-
-            console.log(socket.handshake.auth);
-
-            // Extrapolate Information from SessionDB
-            const connection = connections.fromRawId(socket.handshake.auth.author);
-
-            // User disconnected, now its our job to remove them from the server and wireguard pool.
-            console.log(`Received Disconnect Message from ${connection.author}`);
-            console.timeLog("disconnectClient");
-            
-            // Prioritize Disconnecting User
-            console.log(connection);
-            if(connection.client_pub_key) {
-				await config.down();
-				await config.removePeer(connection.client_pub_key); 
-				await config.save({ noUp: true });
-				await config.up();
-			}
-
-            console.log("Removed Peer");
-            console.timeLog("disconnectClient");
-
-            // Remove Local Instance
-			if(connection.client_number) connections.remove(connection.client_number);
-
-            console.log("Peer Cleaned");
-            console.timeLog("disconnectClient");
-
-            // Let user know that its okay to pull plug now. 
-            socket.emit("OK");
-
-            // Log the Session's Usage
-            await log_usage({
-				id: randomUUID(),
-				userId: connection.author! ?? "",
-				up: connection?.up?.toString()! ?? "", 
-				down: connection?.down?.toString()! ?? "",
-				serverId: process.env.SERVER! ?? "",
-				connStart: connection?.start_time ? new Date(connection?.start_time) : new Date(Date.now())
-			}).then(e => console.log(e.reason));
-
-            console.log("Usage Report Created.");
-            console.timeEnd("disconnectClient");
-        }
-    });
-
-    // Client Connects as so:: var socket = io("http://{server_hostname}:6231/", { auth: connection_data });
-    io.use(async (socket, next) => {
-        return next();
-    });
+    }
 }
 
 export default start_websocket_server;
