@@ -70,7 +70,7 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
     })
     
     // RESEDA PORT - 6231.
-    server.listen(6231, () => {
+    server.listen(443, () => {
         console.log('Websocket Server Listening on [6231]');
     });
     
