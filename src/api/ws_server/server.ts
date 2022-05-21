@@ -40,8 +40,8 @@ type RequestPacket = {
 const start_websocket_server = (origin: string, config: WgConfig) => {
     const app = express();
 
-    // const key = fs.readFileSync('./key.pem');
-    // const cert = fs.readFileSync('./cert.pem');
+    const key = fs.readFileSync('./key.pem');
+    const cert = fs.readFileSync('./cert.pem');
 
     app.use(express.json()) // for parsing application/json
     app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
@@ -50,7 +50,9 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         origin: '*'
     }));
 
-    const server = http.createServer(app);
+    const server = https.createServer({
+        key, cert
+    }, app);
     
     const io = new Server(server, {
         cors: {
