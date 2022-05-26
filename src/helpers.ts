@@ -71,11 +71,11 @@ export const updateTransferInfo = () => {
 				client.up = parseInt(up);
 				client.down = parseInt(down);
 
-				if(client?.max_up && (client?.max_up > client.up)) {
+				if(client?.max_up && (client.up > client?.max_up)) {
 					console.log(`EXCEEDED UP LIMIT.`)
 				}
 				
-				if(client?.max_down && (client?.max_down > client.down)) {
+				if(client?.max_down && (client.down > client?.max_down)) {
 					console.log(`EXCEEDED DOWN LIMIT.`)
 				}
 
