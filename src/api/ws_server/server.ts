@@ -10,6 +10,8 @@ import log_usage from "../log_usage"
 import cors from "cors"
 import fs from "fs"
 import { disconnect } from "process"
+import { prisma } from "@prisma/client"
+import get_user_limit from "../get_user_limit"
 
 type RequestPacket = {
     server: string,
@@ -89,6 +91,11 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         return next();
     });
 
+    const send_failure = async (socket: Socket, args: { type: "exceeded_user_connections" | "exceeded_throughput" | "general_failure" | "public_key_clash", reason: string }) => {
+        socket.emit('failure', args);
+        user_disconnect(socket);
+    }
+
     const initial_connection = async (socket: Socket) => {
         const partial_connection: Partial<Connection> = socket.handshake.auth;
         console.log(partial_connection);
@@ -98,9 +105,30 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
             // Hence, we will need to disconnect the old user to connect the new one, otherwise they will no longer
             // be able to connect if they fail a disconnect or encounter a bug. This adds repeatability to the service
             // and prevents unknown disconnects.
-            user_disconnect(socket);
+            send_failure(socket, {
+                type: "public_key_clash",
+                reason: `A user already exists with this public key.`
+            })
             return;
         };
+
+        // TODO: Check if there is another user with the same user_id, and check IF their account allows for that...
+        // Also, how is id spoofing going to be managed? rn anyone with any id can just log on and have a free vpn charged under the owners acc...
+        if(partial_connection.author) {
+            const len = connections.fromRawId(partial_connection.author).length;
+            if(len > 0) {
+                send_failure(socket, {
+                    type: "exceeded_user_connections",
+                    reason: `Your account does not allow more than 1 concurrent connection, current connections: ${len}`
+                })
+            }
+        }else {
+            send_failure(socket, {
+                type: "general_failure",
+                reason: "Expected key `author`, was not provided."
+            })
+            return;
+        }
 
         const user_position = connections.lowestAvailablePosition();
 
@@ -130,6 +158,10 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         await config.down().catch(e => console.error(e)).then(e => console.log(e));
         await config.save({ noUp: true });
         await config.up().catch(e => console.error(e)).then(e => console.log(e));
+
+        // After connection, find and set the limits of the user for reference. Now, we can determine if the user exceeds that limit!
+        const lim = await get_user_limit(partial_connection.author);
+        connections.setMaximum(user_position, lim.up, lim.down);
     }
 
     const resume_connection = async (socket: Socket) => {
@@ -150,7 +182,12 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         console.log(socket.handshake.auth);
 
         // Extrapolate Information from SessionDB
-        const connection = connections.fromRawId(socket.handshake.auth.author);
+        const connection = connections.fromId(socket.handshake.auth.client_pub_key);
+
+        if(!connection) {
+            console.log(`Failed to remove user, unable to match private and public keys.`);
+            return;
+        };
 
         // User disconnected, now its our job to remove them from the server and wireguard pool.
         console.log(`Received Disconnect Message from ${connection.author}`);

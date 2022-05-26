@@ -61,14 +61,14 @@ export default class SpaceAllocator {
 		return client ?? {};
 	}
 
-	fromRawId(id: string): Partial<Connection> {
-		let client;
+	fromRawId(id: string): Partial<Connection>[] {
+		let clients: Partial<Connection>[] = [];
 
 		this.space.forEach(e => {
-			if(e.id == id) client = e;
+			if(e.id == id) clients.push(e);
 		});
 
-		return client ?? {};
+		return clients ?? {};
 	}
 }
 

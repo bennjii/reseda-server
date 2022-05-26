@@ -1,6 +1,5 @@
 import { execSync } from 'child_process'
 import { checkWgIsInstalled, WgConfig } from 'wireguard-tools';
-import supabase from './client';
 import { connections } from './space_allocator';
 
 /** 
@@ -42,9 +41,6 @@ export const verifyIntegrity = async () => {
 	if(!process.env.SERVER || !process.env.TZ || !process.env.COUNTRY || !process.env.VIRTUAL || !process.env.KEY || !process.env.FLAG || !process.env.THROTTLED) {
 		console.error("[ERR MISSING ENV] Missing Environment Variables, Requires 'SERVER', 'TZ', 'COUNTRY', 'VIRTUAL', 'KEY', 'THROTTLED' and 'FLAG'. These should be stored in a .env file at the root of the project directory. ");
 		process.exit(2);
-	}else if(!supabase) {
-		console.error("[ERR NO SUPABASE] Reseda VPN requires supabase in order to verify integrity and maintain tunnels, try running `yarn install` or `npm install` to install all package dependencies. ");
-		process.exit(2);
 	}else if(!checkWgIsInstalled()) {
 		console.error("[ERR NO WIREGUARD] Reseda VPN Server Requires an installation of wireguard to operate, the latest version can be installed from www.wireguard.com ");
 		process.exit(2);
@@ -66,7 +62,6 @@ export const updateTransferInfo = () => {
 		const [ public_key, up, down ] = transfer.split("\t");
 		if(!public_key || !up || !down) return; 
 
-
 		const client_num = connections.fromId(public_key).client_number;
 
 		if(client_num) {
@@ -75,6 +70,14 @@ export const updateTransferInfo = () => {
 			if(client) {
 				client.up = parseInt(up);
 				client.down = parseInt(down);
+
+				if(client?.max_up && (client?.max_up > client.up)) {
+					console.log(`EXCEEDED UP LIMIT.`)
+				}
+				
+				if(client?.max_down && (client?.max_down > client.down)) {
+					console.log(`EXCEEDED DOWN LIMIT.`)
+				}
 
 				console.log(`${public_key} :: UP: ${client.up} / ${client.max_up} (${client.up / (client?.max_up ?? 1)}%)  DOWN: ${client.down} / ${client.max_down}  (${client.down / (client?.max_down ?? 1)}%)`);
 			}

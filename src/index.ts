@@ -6,10 +6,8 @@ import displayTitle from './title'
 import ip from 'ip';
 
 import register_server from './api/register_server'
-import createOnDeleteListener from './api/listeners/on_delete'
 
 import { quitQuietly, updateTransferInfo, verifyIntegrity } from './helpers';
-import createOnCreateListener from './api/listeners/on_create';
 import start_websocket_server from './api/ws_server/server';
 
 const envIP = process.env.IP;
@@ -49,9 +47,6 @@ const server = async () => {
 	await svr_config.writeToFile();
 
 	await svr_config.up();
-
-	createOnDeleteListener(svr_config);
-	createOnCreateListener(svr_config, IP);
 
 	// Instantiate SocketIO Server
 	start_websocket_server(IP, svr_config);
