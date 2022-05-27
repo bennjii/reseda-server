@@ -1,5 +1,6 @@
 import { execSync } from 'child_process'
 import { checkWgIsInstalled, WgConfig } from 'wireguard-tools';
+import { user_disconnect } from './api/ws_server/server';
 import { connections } from './space_allocator';
 
 /** 
@@ -54,7 +55,7 @@ export const verifyIntegrity = async () => {
  * When disconnecting, or committing a usage report - the usage will be pulled from the last update.
  * @returns void
  */
-export const updateTransferInfo = () => {
+export const updateTransferInfo = (config: WgConfig) => {
 	const log = execSync("wg show reseda transfer")
 	const transfers = log.toString().split("\n").filter(e => e !== '');
 
@@ -74,6 +75,8 @@ export const updateTransferInfo = () => {
 				if(client?.max_up && (client.up > client?.max_up)) {
 					console.log(`EXCEEDED UP LIMIT.`)
 				}
+
+				if(client.socket) user_disconnect(client.socket, config);
 				
 				if(client?.max_down && (client.down > client?.max_down)) {
 					console.log(`EXCEEDED DOWN LIMIT.`)
