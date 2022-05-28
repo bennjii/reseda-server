@@ -1,6 +1,5 @@
 import { execSync } from 'child_process'
 import { checkWgIsInstalled, WgConfig } from 'wireguard-tools';
-import { user_disconnect } from './api/ws_server/server';
 import { connections } from './space_allocator';
 
 /** 
@@ -74,12 +73,12 @@ export const updateTransferInfo = () => {
 
 				if(client?.max_up && (client.up > client?.max_up)) {
 					console.log(`EXCEEDED UP LIMIT.`);
-					if(client.socket) user_disconnect(client.socket);
+					// if(client.socket) user_disconnect(client.socket);
 				}
 				
 				if(client?.max_down && (client.down > client?.max_down)) {
 					console.log(`EXCEEDED DOWN LIMIT.`);
-					if(client.socket) user_disconnect(client.socket);
+					// if(client.socket) user_disconnect(client.socket);
 				}
 
 				console.log(`${public_key} :: UP: ${client.up} / ${client.max_up} (${client.up / (client?.max_up ?? 1)}%)  DOWN: ${client.down} / ${client.max_down}  (${client.down / (client?.max_down ?? 1)}%)`);
