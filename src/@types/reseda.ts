@@ -1,5 +1,3 @@
-import { Socket } from "socket.io"
-
 export type Connection = {
 	id: String,
 	author: string,
@@ -11,8 +9,7 @@ export type Connection = {
 	server_endpoint: string,
 	up: number, down: number,
 	max_up: number, max_down: number,
-	start_time: number,
-	socket: Socket
+	start_time: number
 }
 
 export type ResedaUser = {
