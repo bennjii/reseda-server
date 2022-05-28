@@ -77,31 +77,6 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
             user_disconnect(socket);
             return;
         }
-    
-        const intv = setInterval(() => {
-            const client = connections.fromRawId(socket.handshake.auth.client_pub_key)[0];
-            console.log(client, socket.handshake.auth);
-
-            if(client.up && client.down) {
-                if(client?.max_up && (client?.up > client?.max_up)) {
-                    console.log(`EXCEEDED UP LIMIT.`);
-                    if(socket) send_failure(socket, {
-                        type: "exceeded_throughput",
-                        reason: `The client has exceeded its maximum data allowance on UPLINK of ::::${client?.max_up}::::`
-                    })
-                }
-                
-                if(client?.max_down && (client?.down > client?.max_down)) {
-                    console.log(`EXCEEDED DOWN LIMIT.`);
-                    if(socket) send_failure(socket, {
-                        type: "exceeded_throughput",
-                        reason: `The client has exceeded its maximum data allowance on DOWNLINK of ::::${client?.max_down}::::`
-                    })
-                }
-            }
-        }, 10000);
-
-        socket.on("disconnect", () => clearInterval(intv));
     });
 
     // Client Connects as so:: var socket = io("http://{server_hostname}:6231/", { auth: connection_data });

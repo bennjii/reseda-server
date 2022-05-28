@@ -71,17 +71,17 @@ export const updateTransferInfo = () => {
 				client.up = parseInt(up);
 				client.down = parseInt(down);
 
-				if(client?.max_up && (client.up > client?.max_up)) {
-					console.log(`EXCEEDED UP LIMIT.`);
-					// if(client.socket) user_disconnect(client.socket);
-				}
+				// if(client?.max_up && (client.up > client?.max_up)) {
+				// 	console.log(`EXCEEDED UP LIMIT.`);
+				// 	// if(client.socket) user_disconnect(client.socket);
+				// }
 				
-				if(client?.max_down && (client.down > client?.max_down)) {
-					console.log(`EXCEEDED DOWN LIMIT.`);
-					// if(client.socket) user_disconnect(client.socket);
-				}
+				// if(client?.max_down && (client.down > client?.max_down)) {
+				// 	console.log(`EXCEEDED DOWN LIMIT.`);
+				// 	// if(client.socket) user_disconnect(client.socket);
+				// }
 
-				console.log(`${public_key} :: UP: ${client.up} / ${client.max_up} (${client.up / (client?.max_up ?? 1)}%)  DOWN: ${client.down} / ${client.max_down}  (${client.down / (client?.max_down ?? 1)}%)`);
+				// console.log(`${public_key} :: UP: ${client.up} / ${client.max_up} (${client.up / (client?.max_up ?? 1)}%)  DOWN: ${client.down} / ${client.max_down}  (${client.down / (client?.max_down ?? 1)}%)`);
 			}
 		}
 	})
