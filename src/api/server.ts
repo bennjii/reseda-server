@@ -12,7 +12,7 @@ import fs from "fs"
 import { disconnect } from "process"
 import { prisma } from "@prisma/client"
 import get_user_limit from "./get_user_limit"
-import { config } from ".."
+import { config } from "../config"
 
 type RequestPacket = {
     server: string,
