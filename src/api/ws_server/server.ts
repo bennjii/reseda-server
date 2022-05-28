@@ -12,6 +12,7 @@ import fs from "fs"
 import { disconnect } from "process"
 import { prisma } from "@prisma/client"
 import get_user_limit from "../get_user_limit"
+import { config } from "../.."
 
 type RequestPacket = {
     server: string,
@@ -39,7 +40,7 @@ type RequestPacket = {
  * Inputs: none,
  * Returns: none
  */
-const start_websocket_server = (config: WgConfig) => {
+const start_websocket_server = () => {
     const app = express();
 
     const key = fs.readFileSync('./key.pem');
@@ -79,11 +80,11 @@ const start_websocket_server = (config: WgConfig) => {
     io.on('connection', async (socket) => {
         console.log("RECIeVED HANDSHAKE", socket?.handshake?.auth?.type);
         if(socket.handshake.auth.type == "initial") {
-            initial_connection(socket, config);
+            initial_connection(socket);
         }else if(socket.handshake.auth.type == "secondary") {
             resume_connection(socket);
         }else {
-            user_disconnect(socket, config);
+            user_disconnect(socket);
         }
     });
 
@@ -93,12 +94,12 @@ const start_websocket_server = (config: WgConfig) => {
     });
 }
 
-const send_failure = async (socket: Socket, config: WgConfig, args: { type: "exceeded_user_connections" | "exceeded_throughput" | "general_failure" | "public_key_clash", reason: string }) => {
+const send_failure = async (socket: Socket, args: { type: "exceeded_user_connections" | "exceeded_throughput" | "general_failure" | "public_key_clash", reason: string }) => {
     socket.emit('failure', args);
-    user_disconnect(socket, config);
+    user_disconnect(socket);
 }
 
-const initial_connection = async (socket: Socket, config: WgConfig) => {
+const initial_connection = async (socket: Socket) => {
     const partial_connection: Partial<Connection> = socket.handshake.auth;
     console.log(partial_connection);
 
@@ -107,7 +108,7 @@ const initial_connection = async (socket: Socket, config: WgConfig) => {
         // Hence, we will need to disconnect the old user to connect the new one, otherwise they will no longer
         // be able to connect if they fail a disconnect or encounter a bug. This adds repeatability to the service
         // and prevents unknown disconnects.
-        send_failure(socket, config, {
+        send_failure(socket, {
             type: "public_key_clash",
             reason: `A user already exists with this public key.`
         })
@@ -119,13 +120,13 @@ const initial_connection = async (socket: Socket, config: WgConfig) => {
     if(partial_connection.author) {
         const len = connections.fromRawId(partial_connection.author).length;
         if(len > 0) {
-            send_failure(socket, config, {
+            send_failure(socket, {
                 type: "exceeded_user_connections",
                 reason: `Your account does not allow more than 1 concurrent connection, current connections: ${len}`
             })
         }
     }else {
-        send_failure(socket, config, {
+        send_failure(socket, {
             type: "general_failure",
             reason: "Expected key `author`, was not provided."
         })
@@ -134,7 +135,7 @@ const initial_connection = async (socket: Socket, config: WgConfig) => {
 
     const user_position = connections.lowestAvailablePosition();
 
-    config
+    config.getConfig()
         .addPeer({
             publicKey: partial_connection.client_pub_key,
             allowedIps: [`192.168.69.${user_position}/24`],
@@ -147,7 +148,7 @@ const initial_connection = async (socket: Socket, config: WgConfig) => {
             author: partial_connection.author ?? "",
             server: partial_connection.server ?? process.env.SERVER ?? "error-0",
             client_pub_key: partial_connection.client_pub_key ?? "",
-            svr_pub_key: config.publicKey ?? "",
+            svr_pub_key: config.getConfig().publicKey ?? "",
             client_number: user_position,
             awaiting: false,
             server_endpoint: origin,
@@ -158,9 +159,9 @@ const initial_connection = async (socket: Socket, config: WgConfig) => {
     const connection = connections.fromId(partial_connection.client_pub_key ?? "");
 
     socket.emit("request_accepted", connection);
-    await config.down().catch(e => console.error(e)).then(e => console.log(e));
-    await config.save({ noUp: true });
-    await config.up().catch(e => console.error(e)).then(e => console.log(e));
+    await config.getConfig().down().catch(e => console.error(e)).then(e => console.log(e));
+    await config.getConfig().save({ noUp: true });
+    await config.getConfig().up().catch(e => console.error(e)).then(e => console.log(e));
 
     // After connection, find and set the limits of the user for reference. Now, we can determine if the user exceeds that limit!
     const lim = await get_user_limit(partial_connection.author);
@@ -180,7 +181,7 @@ const resume_connection = async (socket: Socket) => {
     });
 }
 
-const user_disconnect = async (socket: Socket, config: WgConfig) => {
+const user_disconnect = async (socket: Socket) => {
     console.log("Entering Disconnect Phase")
     console.time("disconnectClient");
 
@@ -201,10 +202,10 @@ const user_disconnect = async (socket: Socket, config: WgConfig) => {
     // Prioritize Disconnecting User
     console.log(connection);
     if(connection.client_pub_key) {
-        await config.down();
-        await config.removePeer(connection.client_pub_key); 
-        await config.save({ noUp: true });
-        await config.up();
+        await config.getConfig().down();
+        await config.getConfig().removePeer(connection.client_pub_key); 
+        await config.getConfig().save({ noUp: true });
+        await config.getConfig().up();
     }
 
     console.log("Removed Peer");

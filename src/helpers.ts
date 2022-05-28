@@ -55,7 +55,7 @@ export const verifyIntegrity = async () => {
  * When disconnecting, or committing a usage report - the usage will be pulled from the last update.
  * @returns void
  */
-export const updateTransferInfo = (config: WgConfig) => {
+export const updateTransferInfo = () => {
 	const log = execSync("wg show reseda transfer")
 	const transfers = log.toString().split("\n").filter(e => e !== '');
 
@@ -73,13 +73,13 @@ export const updateTransferInfo = (config: WgConfig) => {
 				client.down = parseInt(down);
 
 				if(client?.max_up && (client.up > client?.max_up)) {
-					console.log(`EXCEEDED UP LIMIT.`)
+					console.log(`EXCEEDED UP LIMIT.`);
+					if(client.socket) user_disconnect(client.socket);
 				}
-
-				if(client.socket) user_disconnect(client.socket, config);
 				
 				if(client?.max_down && (client.down > client?.max_down)) {
-					console.log(`EXCEEDED DOWN LIMIT.`)
+					console.log(`EXCEEDED DOWN LIMIT.`);
+					if(client.socket) user_disconnect(client.socket);
 				}
 
 				console.log(`${public_key} :: UP: ${client.up} / ${client.max_up} (${client.up / (client?.max_up ?? 1)}%)  DOWN: ${client.down} / ${client.max_down}  (${client.down / (client?.max_down ?? 1)}%)`);
