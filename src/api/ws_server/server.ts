@@ -31,7 +31,7 @@ import get_user_limit from "../get_user_limit"
  * Inputs: none,
  * Returns: none
  */
-const start_websocket_server = (config: WgConfig) => {
+const start_websocket_server = (origin: string, config: WgConfig) => {
     const app = express();
 
     const key = fs.readFileSync('./key.pem');
@@ -78,6 +78,10 @@ const start_websocket_server = (config: WgConfig) => {
         }
     });
 
+    // Client Connects as so:: var socket = io("http://{server_hostname}:6231/", { auth: connection_data });
+    io.use(async (socket, next) => {
+        return next();
+    });
         
     const send_failure = async (socket: Socket, args: { type: "exceeded_user_connections" | "exceeded_throughput" | "general_failure" | "public_key_clash", reason: string }) => {
         socket.emit('failure', args);
@@ -215,11 +219,6 @@ const start_websocket_server = (config: WgConfig) => {
         console.log("Usage Report Created.");
         console.timeEnd("disconnectClient");
     }
-
-    // Client Connects as so:: var socket = io("http://{server_hostname}:6231/", { auth: connection_data });
-    io.use(async (socket, next) => {
-        return next();
-    });
 }
 
 
