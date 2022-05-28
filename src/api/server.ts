@@ -12,10 +12,7 @@ import fs from "fs"
 import { disconnect } from "process"
 import { prisma } from "@prisma/client"
 import get_user_limit from "./get_user_limit"
-import { config as importedConfig } from ".."
-
-console.log(importedConfig)
-const config = importedConfig?.getConfig();
+import { config } from ".."
 
 type RequestPacket = {
     server: string,
@@ -139,7 +136,7 @@ const initial_connection = async (socket: Socket) => {
 
     const user_position = connections.lowestAvailablePosition();
 
-    config
+    config.getConfig()
         .addPeer({
             publicKey: partial_connection.client_pub_key,
             allowedIps: [`192.168.69.${user_position}/24`],
@@ -152,7 +149,7 @@ const initial_connection = async (socket: Socket) => {
             author: partial_connection.author ?? "",
             server: partial_connection.server ?? process.env.SERVER ?? "error-0",
             client_pub_key: partial_connection.client_pub_key ?? "",
-            svr_pub_key: config.publicKey ?? "",
+            svr_pub_key: config.getConfig().publicKey ?? "",
             client_number: user_position,
             awaiting: false,
             server_endpoint: origin,
@@ -163,9 +160,9 @@ const initial_connection = async (socket: Socket) => {
     const connection = connections.fromId(partial_connection.client_pub_key ?? "");
 
     socket.emit("request_accepted", connection);
-    await config.down().catch(e => console.error(e)).then(e => console.log(e));
-    await config.save({ noUp: true });
-    await config.up().catch(e => console.error(e)).then(e => console.log(e));
+    await config.getConfig().down().catch(e => console.error(e)).then(e => console.log(e));
+    await config.getConfig().save({ noUp: true });
+    await config.getConfig().up().catch(e => console.error(e)).then(e => console.log(e));
 
     // After connection, find and set the limits of the user for reference. Now, we can determine if the user exceeds that limit!
     const lim = await get_user_limit(partial_connection.author);
@@ -204,10 +201,10 @@ const user_disconnect = async (socket: Socket) => {
     // Prioritize Disconnecting User
     console.log(connection);
     if(connection.client_pub_key) {
-        await config.down();
-        await config.removePeer(connection.client_pub_key); 
-        await config.save({ noUp: true });
-        await config.up();
+        await config.getConfig().down();
+        await config.getConfig().removePeer(connection.client_pub_key); 
+        await config.getConfig().save({ noUp: true });
+        await config.getConfig().up();
     }
 
     console.log("Removed Peer");
