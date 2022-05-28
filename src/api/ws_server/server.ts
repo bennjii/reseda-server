@@ -9,15 +9,7 @@ import { randomUUID } from "crypto"
 import log_usage from "../log_usage"
 import cors from "cors"
 import fs from "fs"
-import { disconnect } from "process"
-import { prisma } from "@prisma/client"
 import get_user_limit from "../get_user_limit"
-
-type RequestPacket = {
-    server: string,
-    client_pub_key: string,
-    author: string
-}
 
 // Can listen to incoming traffic and manage connections, pinging delete and create events.
 
@@ -77,7 +69,6 @@ const start_websocket_server = (config: WgConfig) => {
     });
     
     io.on('connection', async (socket) => {
-        console.log("RECIeVED HANDSHAKE", socket?.handshake?.auth?.type);
         if(socket.handshake.auth.type == "initial") {
             initial_connection(socket);
         }else if(socket.handshake.auth.type == "secondary") {
@@ -146,8 +137,7 @@ const start_websocket_server = (config: WgConfig) => {
                 client_number: user_position,
                 awaiting: false,
                 server_endpoint: origin,
-                start_time: new Date().getTime(),
-                socket: socket
+                start_time: new Date().getTime()
             });
 
         const connection = connections.fromId(partial_connection.client_pub_key ?? "");
@@ -167,8 +157,6 @@ const start_websocket_server = (config: WgConfig) => {
 
         const partial_connection: Partial<Connection> = socket.handshake.auth;
         const connection = connections.fromId(partial_connection.client_pub_key ?? "");
-
-        connection.socket = socket;
 
         socket.emit("request_response", {
             connection
