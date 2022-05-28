@@ -200,6 +200,8 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         // Extrapolate Information from SessionDB
         const connection = connections.fromId(socket.handshake.auth.client_pub_key);
 
+        console.log(connection);
+
         if(!connection) {
             console.log(`Failed to remove user, unable to match private and public keys.`);
             return;
