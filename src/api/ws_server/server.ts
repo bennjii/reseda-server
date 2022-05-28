@@ -80,7 +80,8 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
     
         const intv = setInterval(() => {
             const client = connections.fromRawId(socket.handshake.auth.client_pub_key)[0];
-            console.log(client);
+            console.log(client, socket.handshake.auth);
+
             if(client.up && client.down) {
                 if(client?.max_up && (client?.up > client?.max_up)) {
                     console.log(`EXCEEDED UP LIMIT.`);
