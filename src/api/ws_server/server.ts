@@ -175,9 +175,8 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         console.log(socket.handshake.auth);
 
         // Extrapolate Information from SessionDB
-        const connection = connections.fromId(socket.handshake.auth.client_pub_key);
+        const connection = connections.fromAuthor(socket.handshake.auth.author);
         console.log(connections.space);
-
         console.log(connection);
 
         if(!connection) {
