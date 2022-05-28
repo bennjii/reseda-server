@@ -182,7 +182,7 @@ const start_websocket_server = (origin: string, config: WgConfig) => {
         if(!connection) {
             console.log(`Failed to remove user, unable to match private and public keys.`);
             return;
-        };
+        }
 
         // User disconnected, now its our job to remove them from the server and wireguard pool.
         console.log(`Received Disconnect Message from ${connection.author}`);
