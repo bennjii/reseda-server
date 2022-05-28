@@ -76,6 +76,11 @@ const start_websocket_server = () => {
     server.listen(443, () => {
         console.log('Websocket Server Listening on [6231]');
     });
+
+    // Client Connects as so:: var socket = io("http://{server_hostname}:6231/", { auth: connection_data });
+    io.use(async (socket, next) => {
+        return next();
+    });
     
     io.on('connection', async (socket) => {
         if(socket.handshake.auth.type == "initial") {
@@ -86,13 +91,6 @@ const start_websocket_server = () => {
             user_disconnect(socket);
         }
     });
-
-    // Client Connects as so:: var socket = io("http://{server_hostname}:6231/", { auth: connection_data });
-    io.use(async (socket, next) => {
-        return next();
-    });
-
-    
 }
 
 const send_failure = async (socket: Socket, args: { type: "exceeded_user_connections" | "exceeded_throughput" | "general_failure" | "public_key_clash", reason: string }) => {
