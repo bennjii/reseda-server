@@ -40,7 +40,7 @@ type RequestPacket = {
  * Inputs: none,
  * Returns: none
  */
-const start_websocket_server = (origin: string, config: WgConfig) => {
+const start_websocket_server = () => {
     const app = express();
 
     const key = fs.readFileSync('./key.pem');

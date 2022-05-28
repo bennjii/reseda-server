@@ -60,7 +60,7 @@ const server = async () => {
 	await config.getConfig().up();
 
 	// Instantiate SocketIO Server
-	start_websocket_server(IP, config.getConfig());
+	start_websocket_server();
 
 	// This should never execute by code, rather as a result of the following handlers - handles normal exit protocols.
 	process.on("exit", () => { console.log(`Process has exited normally.`) });
