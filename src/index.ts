@@ -8,7 +8,7 @@ import ip from 'ip';
 import register_server from './api/register_server'
 
 import { quitQuietly, updateTransferInfo, verifyIntegrity } from './helpers';
-import start_websocket_server from './api/ws_server/server';
+import start_websocket_server from './api/server';
 
 const envIP = process.env.IP;
 if(!process.env.KEY) void(0);
@@ -81,3 +81,5 @@ const server = async () => {
 
 console.log("\n\n\n\nBooting...");
 server();
+
+export { config }
