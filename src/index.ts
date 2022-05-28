@@ -41,8 +41,6 @@ class Configuration {
 	}
 } 
 
-const config = new Configuration();
-
 const server = async () => {
 	await verifyIntegrity();
 	const IP = await envIP ?? ip.address()	
@@ -82,4 +80,4 @@ const server = async () => {
 console.log("\n\n\n\nBooting...");
 server();
 
-export { config }
+export const config = new Configuration();

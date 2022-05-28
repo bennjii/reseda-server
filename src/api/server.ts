@@ -14,7 +14,8 @@ import { prisma } from "@prisma/client"
 import get_user_limit from "./get_user_limit"
 import { config as importedConfig } from ".."
 
-const config = importedConfig.getConfig();
+console.log(importedConfig)
+const config = importedConfig?.getConfig();
 
 type RequestPacket = {
     server: string,
